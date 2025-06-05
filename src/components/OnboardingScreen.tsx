@@ -45,6 +45,9 @@ const OnboardingScreen = ({ onComplete }: OnboardingScreenProps) => {
     onComplete();
   };
 
+  // Extract the current step's icon component
+  const CurrentIcon = steps[currentStep].icon;
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <div className="w-full max-w-md">
@@ -72,7 +75,7 @@ const OnboardingScreen = ({ onComplete }: OnboardingScreenProps) => {
                 transition={{ delay: 0.1 }}
                 className={`w-20 h-20 mx-auto mb-6 bg-gradient-to-r ${steps[currentStep].color} rounded-full flex items-center justify-center`}
               >
-                <steps[currentStep].icon className="w-10 h-10 text-white" />
+                <CurrentIcon className="w-10 h-10 text-white" />
               </motion.div>
 
               <motion.h2

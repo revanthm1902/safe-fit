@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import BrandHeader from './BrandHeader';
 import BottomNavigation from './BottomNavigation';
 import Dashboard from './Dashboard';
 import Health from './Health';
@@ -19,7 +20,7 @@ const MainApp = ({ user }: MainAppProps) => {
 
   const renderActiveScreen = () => {
     if (showSettings) {
-      return <Settings user={user} onBack={() => setShowSettings(false)} />;
+      return <Settings user={user} />;
     }
 
     switch (activeTab) {
@@ -40,11 +41,12 @@ const MainApp = ({ user }: MainAppProps) => {
 
   return (
     <div className="min-h-screen bg-safefit-dark pb-20">
+      <BrandHeader onSettingsClick={() => setShowSettings(!showSettings)} />
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
-        className="min-h-screen"
+        className="min-h-screen pt-16"
       >
         {renderActiveScreen()}
       </motion.div>

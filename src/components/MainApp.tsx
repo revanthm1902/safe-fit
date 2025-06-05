@@ -7,6 +7,7 @@ import Health from './Health';
 import Fitness from './Fitness';
 import Safety from './Safety';
 import Settings from './Settings';
+import BroAI from './BroAI';
 
 interface MainAppProps {
   user: any;
@@ -14,8 +15,13 @@ interface MainAppProps {
 
 const MainApp = ({ user }: MainAppProps) => {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [showSettings, setShowSettings] = useState(false);
 
   const renderActiveScreen = () => {
+    if (showSettings) {
+      return <Settings user={user} onBack={() => setShowSettings(false)} />;
+    }
+
     switch (activeTab) {
       case 'dashboard':
         return <Dashboard />;
@@ -25,15 +31,15 @@ const MainApp = ({ user }: MainAppProps) => {
         return <Fitness />;
       case 'safety':
         return <Safety />;
-      case 'settings':
-        return <Settings user={user} />;
+      case 'bro-ai':
+        return <BroAI />;
       default:
         return <Dashboard />;
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 pb-20">
+    <div className="min-h-screen bg-safefit-dark pb-20">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -42,7 +48,9 @@ const MainApp = ({ user }: MainAppProps) => {
       >
         {renderActiveScreen()}
       </motion.div>
-      <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+      {!showSettings && (
+        <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+      )}
     </div>
   );
 };

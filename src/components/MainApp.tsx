@@ -26,7 +26,7 @@ const MainApp = ({ user }: MainAppProps) => {
       case 'safety':
         return <Safety />;
       case 'settings':
-        return <Settings />;
+        return <Settings user={user} />;
       default:
         return <Dashboard />;
     }

@@ -1,11 +1,13 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { User, Bell, Shield, Palette, Download, LogOut, ChevronRight } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface SettingsProps {
   user: any;
@@ -15,6 +17,80 @@ const Settings = ({ user }: SettingsProps) => {
   const [notifications, setNotifications] = useState(true);
   const [locationSharing, setLocationSharing] = useState(true);
   const [fallDetection, setFallDetection] = useState(true);
+  const [userProfile, setUserProfile] = useState(null);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchUserProfile();
+  }, [user]);
+
+  const fetchUserProfile = async () => {
+    if (!user?.id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error;
+      setUserProfile(data);
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      toast({
+        title: "Signed out successfully",
+        description: "See you next time!",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error signing out",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const exportHealthData = async () => {
+    try {
+      const { data: metrics, error } = await supabase
+        .from('user_metrics')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('recorded_at', { ascending: false });
+
+      if (error) throw error;
+
+      const dataStr = JSON.stringify(metrics, null, 2);
+      const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+      
+      const exportFileDefaultName = `safefit_health_data_${new Date().toISOString().split('T')[0]}.json`;
+      
+      const linkElement = document.createElement('a');
+      linkElement.setAttribute('href', dataUri);
+      linkElement.setAttribute('download', exportFileDefaultName);
+      linkElement.click();
+
+      toast({
+        title: "Data exported successfully",
+        description: "Your health data has been downloaded.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Export failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   const settingsGroups = [
     {
@@ -35,7 +111,7 @@ const Settings = ({ user }: SettingsProps) => {
     {
       title: "Data",
       items: [
-        { icon: Download, label: "Export Health Data", action: () => console.log('Export') },
+        { icon: Download, label: "Export Health Data", action: exportHealthData },
         { icon: Palette, label: "Theme Settings", action: () => console.log('Theme') }
       ]
     }
@@ -64,7 +140,9 @@ const Settings = ({ user }: SettingsProps) => {
               <User className="w-8 h-8 text-white" />
             </div>
             <div>
-              <h3 className="text-xl font-bold text-white">{user?.name || 'User'}</h3>
+              <h3 className="text-xl font-bold text-white">
+                {userProfile?.full_name || 'User'}
+              </h3>
               <p className="text-gray-300">{user?.email || 'user@example.com'}</p>
               <p className="text-teal-400 text-sm">Premium Member</p>
             </div>
@@ -126,6 +204,7 @@ const Settings = ({ user }: SettingsProps) => {
         transition={{ delay: 0.5 }}
       >
         <Button
+          onClick={handleSignOut}
           variant="outline"
           className="w-full border-red-500/50 text-red-400 hover:bg-red-500/10 hover:border-red-500"
         >

@@ -18,17 +18,17 @@ const MainApp = ({ user }: MainAppProps) => {
   const renderActiveScreen = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <Dashboard />;
+        return <Dashboard user={user} />;
       case 'health':
-        return <Health />;
+        return <Health user={user} />;
       case 'fitness':
-        return <Fitness />;
+        return <Fitness user={user} />;
       case 'safety':
-        return <Safety />;
+        return <Safety user={user} />;
       case 'settings':
         return <Settings user={user} />;
       default:
-        return <Dashboard />;
+        return <Dashboard user={user} />;
     }
   };
 

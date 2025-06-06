@@ -95,7 +95,7 @@ const SecurityPasskey = ({ user, onPasskeyVerified }: SecurityPasskeyProps) => {
 
   return (
     <Dialog open={isDialogOpen} onOpenChange={() => {}}>
-      <DialogContent className="sm:max-w-md" hideCloseButton>
+      <DialogContent className="sm:max-w-md [&>button]:hidden">
         <DialogHeader>
           <div className="flex items-center justify-center mb-4">
             <div className="w-16 h-16 bg-gradient-to-r from-safefit-primary to-safefit-highlight rounded-full flex items-center justify-center">

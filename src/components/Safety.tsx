@@ -5,10 +5,13 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Shield, AlertTriangle, Phone, MapPin, Users, Bell, Zap } from 'lucide-react';
+import EmergencyContactManager from './EmergencyContactManager';
+import { useToast } from '@/hooks/use-toast';
 
 const Safety = () => {
   const [sosActive, setSosActive] = useState(false);
   const [sosCountdown, setSosCountdown] = useState(0);
+  const { toast } = useToast();
 
   const triggerSOS = () => {
     setSosActive(true);
@@ -20,6 +23,11 @@ const Safety = () => {
           clearInterval(interval);
           // Here would be the actual SOS trigger
           console.log('SOS Alert Sent!');
+          toast({
+            title: "SOS Alert Sent",
+            description: "Emergency contacts have been notified of your situation.",
+            variant: "destructive",
+          });
           setSosActive(false);
           return 0;
         }
@@ -31,6 +39,10 @@ const Safety = () => {
   const cancelSOS = () => {
     setSosActive(false);
     setSosCountdown(0);
+    toast({
+      title: "SOS Alert Cancelled",
+      description: "The emergency alert has been cancelled.",
+    });
   };
 
   const safetyFeatures = [
@@ -71,14 +83,14 @@ const Safety = () => {
   ];
 
   return (
-    <div className="p-4 pt-12">
+    <div className="p-4 pt-12 bg-white">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="mb-8"
       >
-        <h1 className="text-3xl font-bold text-white mb-2">Safety Center</h1>
-        <p className="text-gray-300">Your personal safety and emergency features</p>
+        <h1 className="text-3xl font-bold text-gray-800 mb-2">Safety Center</h1>
+        <p className="text-gray-600">Your personal safety and emergency features</p>
       </motion.div>
 
       {sosActive && (
@@ -87,12 +99,12 @@ const Safety = () => {
           animate={{ opacity: 1, scale: 1 }}
           className="mb-6"
         >
-          <Alert className="bg-red-500/20 border-red-500 text-white">
+          <Alert className="bg-red-50 border-red-500 text-red-800">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
               <div className="flex items-center justify-between">
                 <span>SOS Alert will be sent in {sosCountdown} seconds</span>
-                <Button onClick={cancelSOS} size="sm" variant="outline" className="text-red-400 border-red-400">
+                <Button onClick={cancelSOS} size="sm" variant="destructive" className="bg-red-600 hover:bg-red-700">
                   Cancel
                 </Button>
               </div>
@@ -107,7 +119,7 @@ const Safety = () => {
         transition={{ delay: 0.1 }}
         className="mb-8"
       >
-        <Card className="p-8 bg-gradient-to-r from-red-500/20 to-pink-500/20 backdrop-blur-lg border border-red-500/30 text-center">
+        <Card className="p-8 bg-gradient-to-r from-red-50 to-pink-50 shadow-lg border border-red-200 text-center">
           <motion.div
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -130,8 +142,8 @@ const Safety = () => {
               )}
             </Button>
           </motion.div>
-          <h3 className="text-2xl font-bold text-white mt-4 mb-2">Emergency SOS</h3>
-          <p className="text-gray-300">Press and hold to alert emergency contacts</p>
+          <h3 className="text-2xl font-bold text-gray-800 mt-4 mb-2">Emergency SOS</h3>
+          <p className="text-gray-600">Press to alert emergency contacts</p>
         </Card>
       </motion.div>
 
@@ -146,30 +158,39 @@ const Safety = () => {
               transition={{ delay: index * 0.1 + 0.2 }}
               whileHover={{ scale: 1.02 }}
             >
-              <Card className="p-6 bg-white/10 backdrop-blur-lg border border-white/20 hover:bg-white/15 transition-all">
+              <Card className="p-6 bg-white shadow-md border border-gray-100 hover:shadow-lg transition-all">
                 <div className="flex items-start justify-between mb-4">
                   <div className={`p-3 rounded-full bg-gradient-to-r ${feature.color}`}>
                     <Icon className="w-6 h-6 text-white" />
                   </div>
-                  <span className="px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-sm font-medium">
+                  <span className="px-3 py-1 bg-green-100 text-green-600 rounded-full text-sm font-medium">
                     {feature.status}
                   </span>
                 </div>
-                <h3 className="text-lg font-bold text-white mb-1">{feature.title}</h3>
-                <p className="text-gray-300 text-sm">{feature.description}</p>
+                <h3 className="text-lg font-bold text-gray-800 mb-1">{feature.title}</h3>
+                <p className="text-gray-600 text-sm">{feature.description}</p>
               </Card>
             </motion.div>
           );
         })}
       </div>
 
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+        className="mb-8"
+      >
+        <EmergencyContactManager userId="test-user-id" />
+      </motion.div>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6 }}
       >
-        <Card className="p-6 bg-white/10 backdrop-blur-lg border border-white/20">
-          <h3 className="text-xl font-bold text-white mb-4">Recent Activity</h3>
+        <Card className="p-6 bg-white shadow-lg border border-gray-100">
+          <h3 className="text-xl font-bold text-gray-800 mb-4">Recent Activity</h3>
           <div className="space-y-3">
             {recentAlerts.map((alert, index) => (
               <motion.div
@@ -177,16 +198,16 @@ const Safety = () => {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 + 0.7 }}
-                className="flex items-center justify-between p-3 bg-white/5 rounded-lg"
+                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
               >
                 <div>
-                  <p className="text-white font-medium">{alert.type}</p>
-                  <p className="text-gray-400 text-sm">{alert.time}</p>
+                  <p className="text-gray-800 font-medium">{alert.type}</p>
+                  <p className="text-gray-500 text-sm">{alert.time}</p>
                 </div>
                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                   alert.status === 'Safe' || alert.status === 'Delivered' 
-                    ? 'bg-green-500/20 text-green-400'
-                    : 'bg-yellow-500/20 text-yellow-400'
+                    ? 'bg-green-100 text-green-600'
+                    : 'bg-yellow-100 text-yellow-600'
                 }`}>
                   {alert.status}
                 </span>

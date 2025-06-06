@@ -1,168 +1,383 @@
 
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Card } from '@/components/ui/card';
+import React, { useEffect, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Bot, Send, Mic, MicOff } from 'lucide-react';
-import BrandHeader from './BrandHeader';
-
-interface Message {
-  id: string;
-  text: string;
-  isUser: boolean;
-  timestamp: Date;
-}
+import { Textarea } from '@/components/ui/textarea';
+import { Card } from '@/components/ui/card';
+import { Send, Smile, Frown, Meh, Camera, X } from 'lucide-react';
+import * as faceapi from 'face-api.js';
 
 const BroAI = () => {
-  const [messages, setMessages] = useState<Message[]>([
+  const [message, setMessage] = useState('');
+  const [chat, setChat] = useState<{role: string, content: string, time: Date}[]>([
     {
-      id: '1',
-      text: "Hey! I'm Bro AI, your personal health and safety companion. How can I help you today?",
-      isUser: false,
-      timestamp: new Date()
+      role: 'ai',
+      content: "Hey bro, I'm your fitness buddy! How are you feeling today?",
+      time: new Date()
     }
   ]);
-  const [inputText, setInputText] = useState('');
-  const [isListening, setIsListening] = useState(false);
-
-  const quickActions = [
-    "How's my health today?",
-    "Remind me to hydrate",
-    "Send SOS alert",
-    "Check my sleep"
-  ];
-
-  const handleSendMessage = (text: string) => {
-    if (!text.trim()) return;
-
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      text: text,
-      isUser: true,
-      timestamp: new Date()
+  const [cameraActive, setCameraActive] = useState(false);
+  const [emotion, setEmotion] = useState<string | null>(null);
+  const [modelsLoaded, setModelsLoaded] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Load face-api models
+  useEffect(() => {
+    const loadModels = async () => {
+      try {
+        const MODEL_URL = '/models';
+        
+        // Display loading message in chat
+        setChat(prev => [...prev, {
+          role: 'system',
+          content: 'Loading facial recognition models...',
+          time: new Date()
+        }]);
+        
+        // Load models
+        await Promise.all([
+          faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+          faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+          faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
+          faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL)
+        ]);
+        
+        setModelsLoaded(true);
+        
+        // Update chat with success message
+        setChat(prev => [
+          ...prev.filter(msg => msg.role !== 'system'),
+          {
+            role: 'system',
+            content: 'Facial recognition activated! I can now see how you\'re feeling.',
+            time: new Date()
+          }
+        ]);
+      } catch (error) {
+        console.error('Error loading models:', error);
+        setChat(prev => [...prev, {
+          role: 'system',
+          content: 'Failed to load facial recognition models. Try refreshing the page.',
+          time: new Date()
+        }]);
+      }
     };
-
-    setMessages(prev => [...prev, userMessage]);
-    setInputText('');
-
+    
+    loadModels();
+  }, []);
+  
+  // Start camera when user activates it
+  const startCamera = async () => {
+    if (!modelsLoaded) {
+      setChat(prev => [...prev, {
+        role: 'system',
+        content: 'Please wait for models to load first.',
+        time: new Date()
+      }]);
+      return;
+    }
+    
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: 'user',
+          width: { ideal: 640 },
+          height: { ideal: 480 }
+        } 
+      });
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+      
+      setCameraActive(true);
+      detectFace();
+      
+    } catch (err) {
+      console.error("Error accessing camera:", err);
+      setChat(prev => [...prev, {
+        role: 'system',
+        content: 'Unable to access your camera. Please check permissions.',
+        time: new Date()
+      }]);
+    }
+  };
+  
+  // Stop camera
+  const stopCamera = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      const tracks = stream.getTracks();
+      
+      tracks.forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+      setCameraActive(false);
+      setEmotion(null);
+    }
+  };
+  
+  // Detect facial expressions
+  const detectFace = () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    
+    // Set canvas dimensions to match video
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    // Create detection interval
+    const interval = setInterval(async () => {
+      if (!video || !canvas || !cameraActive) {
+        clearInterval(interval);
+        return;
+      }
+      
+      // Only process when video is playing
+      if (video.paused || video.ended) return;
+      
+      // Detect faces with expressions
+      const detections = await faceapi
+        .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
+        .withFaceLandmarks()
+        .withFaceExpressions();
+        
+      // Clear previous drawings
+      const ctx = canvas.getContext('2d');
+      if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Check if we found a face
+      if (detections && detections.length > 0) {
+        // Draw results
+        faceapi.draw.drawDetections(canvas, detections);
+        faceapi.draw.drawFaceExpressions(canvas, detections);
+        
+        // Get highest confidence emotion
+        const expressions = detections[0].expressions;
+        let highestExpression = Object.keys(expressions).reduce((a, b) => 
+          expressions[a] > expressions[b] ? a : b
+        );
+        
+        // Only update if significant confidence (above 0.5)
+        if (expressions[highestExpression] > 0.5) {
+          // Map to simpler emotions
+          let simplifiedEmotion;
+          if (['happy', 'surprised'].includes(highestExpression)) {
+            simplifiedEmotion = 'happy';
+          } else if (['sad', 'fearful', 'disgusted', 'angry'].includes(highestExpression)) {
+            simplifiedEmotion = 'sad';
+          } else {
+            simplifiedEmotion = 'neutral';
+          }
+          
+          // If emotion changed, respond
+          if (simplifiedEmotion !== emotion) {
+            setEmotion(simplifiedEmotion);
+            respondToEmotion(simplifiedEmotion);
+          }
+        }
+      }
+    }, 1000); // Check every second
+    
+    return () => clearInterval(interval);
+  };
+  
+  // AI response based on detected emotion
+  const respondToEmotion = (detectedEmotion: string) => {
+    let response = '';
+    
+    switch (detectedEmotion) {
+      case 'happy':
+        response = "You seem happy today! That's awesome, bro! Let's channel that positive energy into a great workout!";
+        break;
+      case 'sad':
+        response = "Hey bro, you seem down. Remember, exercise releases endorphins that can help boost your mood. Want to talk about it?";
+        break;
+      case 'neutral':
+        response = "I see you're pretty neutral today. How about we set some fitness goals to get you energized?";
+        break;
+      default:
+        return;
+    }
+    
+    // Add AI message to chat
+    setChat(prev => [...prev, {
+      role: 'ai',
+      content: response,
+      time: new Date()
+    }]);
+  };
+  
+  // Submit user message
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!message.trim()) return;
+    
+    // Add user message
+    setChat(prev => [...prev, {
+      role: 'user',
+      content: message,
+      time: new Date()
+    }]);
+    
     // Simulate AI response
     setTimeout(() => {
-      const aiResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        text: generateAIResponse(text),
-        isUser: false,
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, aiResponse]);
+      let response = "That's cool, bro! Keep pushing yourself and stay motivated. Let me know if you need any fitness advice!";
+      
+      // Check for specific keywords
+      if (message.toLowerCase().includes('workout')) {
+        response = "Working out is key to hitting your goals! Remember to maintain proper form and stay hydrated.";
+      } else if (message.toLowerCase().includes('diet') || message.toLowerCase().includes('food')) {
+        response = "Nutrition is crucial, bro! Make sure you're getting enough protein and watch those macros.";
+      } else if (message.toLowerCase().includes('tired') || message.toLowerCase().includes('exhausted')) {
+        response = "Feeling tired is normal, but don't let it stop you. Listen to your body, get proper rest, but keep consistent.";
+      }
+      
+      setChat(prev => [...prev, {
+        role: 'ai',
+        content: response,
+        time: new Date()
+      }]);
     }, 1000);
+    
+    // Clear input
+    setMessage('');
   };
-
-  const generateAIResponse = (userText: string): string => {
-    const responses = {
-      health: "Based on your recent data, your heart rate is 72 BPM (normal), SpO2 is 98% (excellent), and you've taken 8,234 steps today. Keep up the great work! 💪",
-      hydrate: "Got it! I'll remind you to drink water every 2 hours. Staying hydrated is crucial for optimal health! 💧",
-      sos: "SOS feature activated. Your emergency contacts will be notified with your current location if you confirm the alert. Stay safe! 🚨",
-      sleep: "You slept 7h 23m last night with 92% sleep quality. Your REM cycles look good! Try to maintain this schedule. 😴",
-      default: "I'm here to help with your health, fitness, and safety needs. Try asking about your vitals, reminders, or emergency features! 🤖"
-    };
-
-    const lowerText = userText.toLowerCase();
-    if (lowerText.includes('health') || lowerText.includes('vitals')) return responses.health;
-    if (lowerText.includes('water') || lowerText.includes('hydrate')) return responses.hydrate;
-    if (lowerText.includes('sos') || lowerText.includes('emergency')) return responses.sos;
-    if (lowerText.includes('sleep')) return responses.sleep;
-    return responses.default;
-  };
-
-  const toggleListening = () => {
-    setIsListening(!isListening);
-    // Voice recognition would be implemented here
+  
+  // Auto scroll chat to bottom
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [chat]);
+  
+  // Get emotion icon
+  const getEmotionIcon = () => {
+    switch (emotion) {
+      case 'happy':
+        return <Smile className="w-6 h-6 text-green-500" />;
+      case 'sad':
+        return <Frown className="w-6 h-6 text-blue-500" />;
+      case 'neutral':
+        return <Meh className="w-6 h-6 text-gray-500" />;
+      default:
+        return null;
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-safefit-dark via-safefit-primary/10 to-safefit-dark">
-      <BrandHeader />
-      
-      <div className="pt-20 pb-24 px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6 text-center"
-        >
-          <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-r from-safefit-primary to-safefit-highlight rounded-full flex items-center justify-center pulse-glow">
-            <Bot className="w-10 h-10 text-white" />
-          </div>
-          <h1 className="text-2xl font-bold text-safefit-highlight font-poppins">Bro AI Assistant</h1>
-          <p className="text-safefit-card font-poppins">Your intelligent health companion</p>
-        </motion.div>
-
-        <div className="max-w-4xl mx-auto">
-          <Card className="mb-4 p-4 bg-safefit-card/20 backdrop-blur-lg border border-safefit-border/30 max-h-96 overflow-y-auto">
-            <AnimatePresence>
-              {messages.map((message) => (
-                <motion.div
-                  key={message.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  className={`flex mb-4 ${message.isUser ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                    message.isUser 
-                      ? 'bg-safefit-primary text-white' 
-                      : 'bg-safefit-highlight/20 text-safefit-dark border border-safefit-border'
-                  }`}>
-                    <p className="font-poppins">{message.text}</p>
-                    <span className="text-xs opacity-70">
-                      {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </Card>
-
-          <div className="mb-4">
-            <div className="flex flex-wrap gap-2 mb-4">
-              {quickActions.map((action, index) => (
-                <Button
-                  key={index}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleSendMessage(action)}
-                  className="border-safefit-border text-safefit-primary hover:bg-safefit-primary/20 font-poppins"
-                >
-                  {action}
-                </Button>
-              ))}
-            </div>
-
-            <div className="flex space-x-2">
-              <Input
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage(inputText)}
-                placeholder="Ask me about your health, safety, or set reminders..."
-                className="flex-1 bg-safefit-card/20 border-safefit-border text-safefit-dark placeholder:text-safefit-primary/70 font-poppins"
-              />
-              <Button
-                onClick={toggleListening}
-                variant={isListening ? "default" : "outline"}
-                size="icon"
-                className={`${isListening ? 'bg-red-500 hover:bg-red-600' : 'border-safefit-border text-safefit-primary hover:bg-safefit-primary/20'}`}
-              >
-                {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-              </Button>
-              <Button
-                onClick={() => handleSendMessage(inputText)}
-                className="bg-safefit-primary hover:bg-safefit-primary/90 text-white"
-              >
-                <Send className="w-4 h-4" />
-              </Button>
-            </div>
+    <div className="flex flex-col h-full min-h-screen bg-white">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="p-4 pt-12 pb-6"
+      >
+        <div className="flex items-center justify-between mb-2">
+          <h1 className="text-3xl font-bold text-gray-800">BroAI</h1>
+          <div className="flex items-center space-x-2">
+            {emotion && getEmotionIcon()}
+            <Button
+              onClick={cameraActive ? stopCamera : startCamera}
+              variant={cameraActive ? "destructive" : "outline"}
+              size="sm"
+              className={`${cameraActive ? "bg-red-600 hover:bg-red-700" : "border-gray-300 text-gray-700"}`}
+            >
+              {cameraActive ? <X className="w-4 h-4 mr-1" /> : <Camera className="w-4 h-4 mr-1" />}
+              {cameraActive ? "Stop Camera" : "Start Camera"}
+            </Button>
           </div>
         </div>
+        <p className="text-gray-600">Your personal fitness motivation companion</p>
+      </motion.div>
+
+      {/* Camera View */}
+      {cameraActive && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          className="relative mx-4 mb-4 overflow-hidden rounded-xl shadow-lg"
+          style={{ maxHeight: "30vh" }}
+        >
+          <div className="relative w-full" style={{ maxHeight: "30vh" }}>
+            <video
+              ref={videoRef}
+              autoPlay
+              muted
+              playsInline
+              className="w-full object-cover rounded-xl"
+              style={{ maxHeight: "30vh" }}
+            />
+            <canvas
+              ref={canvasRef}
+              className="absolute top-0 left-0 w-full h-full"
+            />
+          </div>
+        </motion.div>
+      )}
+
+      {/* Chat Messages */}
+      <div 
+        ref={chatContainerRef}
+        className="flex-1 p-4 overflow-y-auto"
+        style={{ maxHeight: "calc(100vh - 220px)" }}
+      >
+        <div className="flex flex-col space-y-4">
+          {chat.map((msg, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            >
+              <div 
+                className={`max-w-[80%] px-4 py-3 rounded-2xl ${
+                  msg.role === 'user' 
+                    ? 'bg-blue-600 text-white rounded-br-none'
+                    : msg.role === 'system'
+                      ? 'bg-gray-200 text-gray-800'
+                      : 'bg-gray-100 text-gray-800 rounded-bl-none'
+                }`}
+              >
+                <p>{msg.content}</p>
+                <div className={`text-xs mt-1 ${msg.role === 'user' ? 'text-blue-100' : 'text-gray-500'}`}>
+                  {msg.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+
+      {/* Input Form */}
+      <div className="p-4 border-t border-gray-200 bg-white">
+        <form onSubmit={handleSubmit} className="flex space-x-2">
+          <Textarea
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Type your message..."
+            className="flex-1 bg-gray-100 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+            rows={1}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSubmit(e);
+              }
+            }}
+          />
+          <Button 
+            type="submit" 
+            disabled={!message.trim()}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            <Send className="w-4 h-4" />
+          </Button>
+        </form>
       </div>
     </div>
   );

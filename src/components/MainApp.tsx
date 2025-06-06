@@ -18,6 +18,10 @@ const MainApp = ({ user }: MainAppProps) => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showSettings, setShowSettings] = useState(false);
 
+  const handleSettingsToggle = () => {
+    setShowSettings(!showSettings);
+  };
+
   const renderActiveScreen = () => {
     if (showSettings) {
       return <Settings user={user} />;
@@ -40,8 +44,8 @@ const MainApp = ({ user }: MainAppProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-safefit-dark pb-20">
-      <BrandHeader onSettingsClick={() => setShowSettings(!showSettings)} />
+    <div className="min-h-screen bg-white pb-20">
+      <BrandHeader onSettingsClick={handleSettingsToggle} />
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}

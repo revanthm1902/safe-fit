@@ -9,8 +9,15 @@ interface BrandHeaderProps {
 }
 
 const BrandHeader = ({ onSettingsClick }: BrandHeaderProps) => {
+  const handleSettingsClick = () => {
+    console.log('Settings clicked');
+    if (onSettingsClick) {
+      onSettingsClick();
+    }
+  };
+
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-lg border-b border-safefit-border/20 shadow-sm">
+    <div className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-lg border-b border-gray-200 shadow-sm">
       <div className="flex items-center justify-between px-6 py-4">
         <div className="flex-1" />
         
@@ -19,8 +26,8 @@ const BrandHeader = ({ onSettingsClick }: BrandHeaderProps) => {
           animate={{ opacity: 1, y: 0 }}
           className="flex-1 flex justify-center"
         >
-          <h1 className="text-2xl font-bold text-safefit-dark font-poppins">
-            SafeFit
+          <h1 className="text-3xl font-black text-safefit-dark tracking-tight" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+            Safe<span className="text-safefit-highlight">Fit</span>
           </h1>
         </motion.div>
         
@@ -28,10 +35,10 @@ const BrandHeader = ({ onSettingsClick }: BrandHeaderProps) => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={onSettingsClick}
-            className="text-safefit-primary hover:bg-safefit-light/90"
+            onClick={handleSettingsClick}
+            className="text-safefit-dark hover:bg-gray-100 hover:text-safefit-highlight p-2 rounded-full"
           >
-            <Settings className="w-5 h-5" />
+            <Settings className="w-6 h-6" />
           </Button>
         </div>
       </div>

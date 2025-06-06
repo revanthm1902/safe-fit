@@ -38,24 +38,20 @@ const EmergencyContactManager = () => {
   const hasAccess = checkFeatureAccess('emergency-contacts');
 
   useEffect(() => {
-    // Mock data for contacts
-    const mockContacts: EmergencyContact[] = [
-      {
-        id: '1',
-        contact_name: 'Mom',
-        contact_number: '+91 9876543210',
-        created_at: new Date().toISOString()
-      },
-      {
-        id: '2',
-        contact_name: 'Dad',
-        contact_number: '+91 9876543211',
-        created_at: new Date().toISOString()
-      }
-    ];
-    
-    setContacts(mockContacts);
+    loadContacts();
   }, []);
+
+  const loadContacts = () => {
+    const savedContacts = localStorage.getItem('emergency_contacts');
+    if (savedContacts) {
+      setContacts(JSON.parse(savedContacts));
+    }
+  };
+
+  const saveContacts = (updatedContacts: EmergencyContact[]) => {
+    localStorage.setItem('emergency_contacts', JSON.stringify(updatedContacts));
+    setContacts(updatedContacts);
+  };
 
   const handleOpenDialog = (contact?: EmergencyContact) => {
     if (!hasAccess) {
@@ -85,6 +81,7 @@ const EmergencyContactManager = () => {
     setIsDialogOpen(false);
     setName('');
     setNumber('');
+    setCurrentContact(null);
   };
 
   const handleOpenDeleteDialog = (contact: EmergencyContact) => {
@@ -102,7 +99,7 @@ const EmergencyContactManager = () => {
   };
 
   const handleSaveContact = () => {
-    if (!name || !number) {
+    if (!name.trim() || !number.trim()) {
       toast({
         title: "Missing information",
         description: "Please provide both name and phone number",
@@ -112,24 +109,23 @@ const EmergencyContactManager = () => {
     }
     
     if (isEditing && currentContact) {
-      // Update existing contact
       const updatedContacts = contacts.map(c => 
         c.id === currentContact.id ? { ...c, contact_name: name, contact_number: number } : c
       );
-      setContacts(updatedContacts);
+      saveContacts(updatedContacts);
       toast({
         title: "Contact updated",
         description: `${name} has been updated successfully`
       });
     } else {
-      // Add new contact
       const newContact: EmergencyContact = {
         id: Date.now().toString(),
         contact_name: name,
         contact_number: number,
         created_at: new Date().toISOString()
       };
-      setContacts([...contacts, newContact]);
+      const updatedContacts = [...contacts, newContact];
+      saveContacts(updatedContacts);
       toast({
         title: "Contact added",
         description: `${name} has been added as an emergency contact`
@@ -142,12 +138,13 @@ const EmergencyContactManager = () => {
   const handleDeleteContact = () => {
     if (currentContact) {
       const filteredContacts = contacts.filter(c => c.id !== currentContact.id);
-      setContacts(filteredContacts);
+      saveContacts(filteredContacts);
       toast({
         title: "Contact deleted",
         description: `${currentContact.contact_name} has been removed from your emergency contacts`
       });
       setIsDeleteDialogOpen(false);
+      setCurrentContact(null);
     }
   };
 
@@ -158,21 +155,21 @@ const EmergencyContactManager = () => {
         <Button 
           onClick={() => handleOpenDialog()} 
           disabled={!hasAccess}
-          className="bg-safefit-highlight hover:bg-safefit-highlight/90"
+          className="bg-safefit-highlight hover:bg-safefit-highlight/90 text-white"
         >
           <Plus size={16} className="mr-2" /> Add Contact
         </Button>
       </div>
 
       {!isSubscribed && (
-        <Card className="p-4 border-dashed border-2 border-safefit-highlight/50 bg-safefit-light/50 mb-4">
+        <Card className="p-4 border-dashed border-2 border-safefit-highlight/50 bg-gray-50 mb-4">
           <div className="text-center py-3">
             <p className="text-safefit-dark font-medium mb-2">Premium Feature</p>
-            <p className="text-safefit-primary text-sm mb-3">
+            <p className="text-gray-600 text-sm mb-3">
               Subscribe to manage emergency contacts
             </p>
             <Button 
-              className="bg-safefit-highlight hover:bg-safefit-highlight/90"
+              className="bg-safefit-highlight hover:bg-safefit-highlight/90 text-white"
               size="sm"
             >
               Upgrade Now
@@ -189,9 +186,7 @@ const EmergencyContactManager = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
           >
-            <Card 
-              className={`p-4 ${!hasAccess ? 'opacity-60' : ''}`}
-            >
+            <Card className={`p-4 bg-white border border-gray-200 ${!hasAccess ? 'opacity-60' : ''}`}>
               <div className="flex justify-between items-center">
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 rounded-full bg-safefit-primary/10 flex items-center justify-center">
@@ -199,7 +194,7 @@ const EmergencyContactManager = () => {
                   </div>
                   <div>
                     <p className="font-medium text-safefit-dark">{contact.contact_name}</p>
-                    <div className="flex items-center text-sm text-safefit-primary">
+                    <div className="flex items-center text-sm text-gray-600">
                       <Phone size={14} className="mr-1" />
                       {contact.contact_number}
                     </div>
@@ -211,7 +206,7 @@ const EmergencyContactManager = () => {
                     size="sm" 
                     onClick={() => handleOpenDialog(contact)}
                     disabled={!hasAccess}
-                    className="text-safefit-primary hover:text-safefit-highlight hover:bg-safefit-highlight/10"
+                    className="text-safefit-primary hover:text-safefit-highlight hover:bg-gray-100"
                   >
                     <Edit size={16} />
                   </Button>
@@ -229,7 +224,7 @@ const EmergencyContactManager = () => {
             </Card>
           </motion.div>
         )) : (
-          <div className="text-center py-8 text-safefit-primary/70">
+          <div className="text-center py-8 text-gray-500">
             <p>No emergency contacts added yet.</p>
           </div>
         )}
@@ -239,34 +234,40 @@ const EmergencyContactManager = () => {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{isEditing ? 'Edit Contact' : 'Add Emergency Contact'}</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-safefit-dark">
+              {isEditing ? 'Edit Contact' : 'Add Emergency Contact'}
+            </DialogTitle>
+            <DialogDescription className="text-gray-600">
               {isEditing ? 'Update the contact information below.' : 'Add someone who will be notified in case of emergency.'}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Contact Name</Label>
+              <Label htmlFor="name" className="text-safefit-dark">Contact Name</Label>
               <Input
                 id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Enter contact name"
+                className="border-gray-300 focus:border-safefit-highlight"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
+              <Label htmlFor="phone" className="text-safefit-dark">Phone Number</Label>
               <Input
                 id="phone"
                 value={number}
                 onChange={(e) => setNumber(e.target.value)}
                 placeholder="Enter phone number"
+                className="border-gray-300 focus:border-safefit-highlight"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={handleCloseDialog}>Cancel</Button>
-            <Button onClick={handleSaveContact} className="bg-safefit-highlight hover:bg-safefit-highlight/90">
+            <Button variant="outline" onClick={handleCloseDialog} className="border-gray-300 text-gray-700">
+              Cancel
+            </Button>
+            <Button onClick={handleSaveContact} className="bg-safefit-highlight hover:bg-safefit-highlight/90 text-white">
               {isEditing ? 'Update' : 'Save'}
             </Button>
           </DialogFooter>
@@ -277,19 +278,20 @@ const EmergencyContactManager = () => {
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Emergency Contact</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-safefit-dark">Delete Emergency Contact</DialogTitle>
+            <DialogDescription className="text-gray-600">
               Are you sure you want to delete {currentContact?.contact_name} from your emergency contacts?
               This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)} className="border-gray-300 text-gray-700">
               Cancel
             </Button>
             <Button 
               variant="destructive" 
               onClick={handleDeleteContact}
+              className="bg-red-500 hover:bg-red-600 text-white"
             >
               Delete
             </Button>

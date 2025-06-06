@@ -9,6 +9,7 @@ import Fitness from './Fitness';
 import Safety from './Safety';
 import Settings from './Settings';
 import BroAI from './BroAI';
+import SecurityPasskey from './SecurityPasskey';
 
 interface MainAppProps {
   user: any;
@@ -17,10 +18,19 @@ interface MainAppProps {
 const MainApp = ({ user }: MainAppProps) => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showSettings, setShowSettings] = useState(false);
+  const [isPasskeyVerified, setIsPasskeyVerified] = useState(false);
 
   const handleSettingsToggle = () => {
     setShowSettings(!showSettings);
   };
+
+  const handlePasskeyVerified = () => {
+    setIsPasskeyVerified(true);
+  };
+
+  if (!isPasskeyVerified) {
+    return <SecurityPasskey user={user} onPasskeyVerified={handlePasskeyVerified} />;
+  }
 
   const renderActiveScreen = () => {
     if (showSettings) {
@@ -44,7 +54,7 @@ const MainApp = ({ user }: MainAppProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-safefit-white pb-20">
+    <div className="min-h-screen bg-white pb-20">
       <BrandHeader onSettingsClick={handleSettingsToggle} />
       <motion.div
         initial={{ opacity: 0 }}

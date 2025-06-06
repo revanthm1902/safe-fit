@@ -9,7 +9,6 @@ import Fitness from './Fitness';
 import Safety from './Safety';
 import Settings from './Settings';
 import BroAI from './BroAI';
-import { SubscriptionProvider } from '@/contexts/SubscriptionContext';
 
 interface MainAppProps {
   user: any;
@@ -45,22 +44,20 @@ const MainApp = ({ user }: MainAppProps) => {
   };
 
   return (
-    <SubscriptionProvider>
-      <div className="min-h-screen bg-safefit-white pb-20">
-        <BrandHeader onSettingsClick={handleSettingsToggle} />
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
-          className="min-h-screen pt-16"
-        >
-          {renderActiveScreen()}
-        </motion.div>
-        {!showSettings && (
-          <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} />
-        )}
-      </div>
-    </SubscriptionProvider>
+    <div className="min-h-screen bg-safefit-white pb-20">
+      <BrandHeader onSettingsClick={handleSettingsToggle} />
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+        className="min-h-screen pt-16"
+      >
+        {renderActiveScreen()}
+      </motion.div>
+      {!showSettings && (
+        <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+      )}
+    </div>
   );
 };
 

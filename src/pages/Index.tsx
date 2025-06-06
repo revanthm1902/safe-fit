@@ -7,6 +7,7 @@ import ProfileForm from '../components/ProfileForm';
 import OnboardingScreen from '../components/OnboardingScreen';
 import SubscriptionPage from '../components/SubscriptionPage';
 import MainApp from '../components/MainApp';
+import { SubscriptionProvider } from '@/contexts/SubscriptionContext';
 
 const Index = () => {
   const [currentScreen, setCurrentScreen] = useState<'splash' | 'auth' | 'profile' | 'onboarding' | 'subscription' | 'main'>('splash');
@@ -125,14 +126,16 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-safefit-white">
-      {currentScreen === 'splash' && <SplashScreen />}
-      {currentScreen === 'auth' && <AuthScreen onAuthSuccess={handleAuthSuccess} />}
-      {currentScreen === 'profile' && <ProfileForm user={user} onComplete={handleProfileComplete} />}
-      {currentScreen === 'onboarding' && <OnboardingScreen onComplete={handleOnboardingComplete} />}
-      {currentScreen === 'subscription' && <SubscriptionPage onComplete={handleSubscriptionComplete} />}
-      {currentScreen === 'main' && <MainApp user={user} />}
-    </div>
+    <SubscriptionProvider>
+      <div className="min-h-screen bg-safefit-white">
+        {currentScreen === 'splash' && <SplashScreen />}
+        {currentScreen === 'auth' && <AuthScreen onAuthSuccess={handleAuthSuccess} />}
+        {currentScreen === 'profile' && <ProfileForm user={user} onComplete={handleProfileComplete} />}
+        {currentScreen === 'onboarding' && <OnboardingScreen onComplete={handleOnboardingComplete} />}
+        {currentScreen === 'subscription' && <SubscriptionPage onComplete={handleSubscriptionComplete} />}
+        {currentScreen === 'main' && <MainApp user={user} />}
+      </div>
+    </SubscriptionProvider>
   );
 };
 

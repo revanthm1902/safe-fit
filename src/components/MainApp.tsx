@@ -21,6 +21,7 @@ const MainApp = ({ user }: MainAppProps) => {
   const [isPasskeyVerified, setIsPasskeyVerified] = useState(false);
 
   const handleSettingsToggle = () => {
+    console.log('Settings toggle clicked, current state:', showSettings);
     setShowSettings(!showSettings);
   };
 

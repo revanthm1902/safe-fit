@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
@@ -97,17 +96,34 @@ const Settings = ({ user, onBack }: SettingsProps) => {
 
   const handleSignOut = async () => {
     try {
+      console.log('Attempting to sign out...');
+      
+      // Clear local storage
+      localStorage.clear();
+      
+      // Sign out from Supabase
       const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      
+      if (error) {
+        console.error('Supabase sign out error:', error);
+        throw error;
+      }
+      
+      console.log('Successfully signed out from Supabase');
       
       toast({
         title: "Signed out successfully",
         description: "See you next time!",
       });
+      
+      // Force page reload to reset app state
+      window.location.href = '/';
+      
     } catch (error: any) {
+      console.error('Sign out error:', error);
       toast({
         title: "Error signing out",
-        description: error.message,
+        description: error.message || "Something went wrong",
         variant: "destructive",
       });
     }

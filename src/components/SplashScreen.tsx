@@ -57,7 +57,7 @@ const SplashScreen = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white">
+    <div className="min-h-screen flex items-center justify-center bg-safefit-white">
       <div className="text-center">
         <motion.div
           initial="hidden"
@@ -94,7 +94,7 @@ const SplashScreen = () => {
           <motion.h1
             variants={textAnimation}
             custom={1}
-            className="text-5xl font-bold text-safefit-highlight mt-8 mb-4 font-poppins bg-clip-text text-transparent bg-gradient-to-r from-safefit-primary to-safefit-highlight"
+            className="text-5xl font-bold text-safefit-dark mt-8 mb-4 font-poppins bg-clip-text text-transparent bg-gradient-to-r from-safefit-primary to-safefit-highlight"
           >
             SafeFit
           </motion.h1>
@@ -102,7 +102,7 @@ const SplashScreen = () => {
           <motion.p
             variants={textAnimation}
             custom={2}
-            className="text-xl text-gray-600 font-poppins"
+            className="text-xl text-safefit-primary font-poppins"
           >
             Your Health & Safety Companion
           </motion.p>
@@ -121,7 +121,7 @@ const SplashScreen = () => {
             >
               <Heart className="w-6 h-6" />
             </motion.div>
-            <span className="text-gray-700 font-poppins">Loading SafeFit...</span>
+            <span className="text-safefit-primary font-poppins">Loading SafeFit...</span>
           </div>
           
           <div className="flex justify-center space-x-2">
@@ -130,7 +130,7 @@ const SplashScreen = () => {
                 key={i}
                 animate={{ 
                   scale: [1, 1.3, 1],
-                  backgroundColor: ['rgb(14, 165, 233)', 'rgb(236, 72, 153)', 'rgb(14, 165, 233)']
+                  backgroundColor: ['rgb(27, 59, 111)', 'rgb(6, 90, 130)', 'rgb(27, 59, 111)']
                 }}
                 transition={{ 
                   duration: 1.5, 

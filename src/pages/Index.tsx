@@ -5,12 +5,13 @@ import SplashScreen from '../components/SplashScreen';
 import AuthScreen from '../components/AuthScreen';
 import ProfileForm from '../components/ProfileForm';
 import OnboardingScreen from '../components/OnboardingScreen';
+import SubscriptionPage from '../components/SubscriptionPage';
 import MainApp from '../components/MainApp';
 
 const Index = () => {
-  const [currentScreen, setCurrentScreen] = useState<'splash' | 'auth' | 'profile' | 'onboarding' | 'main'>('splash');
+  const [currentScreen, setCurrentScreen] = useState<'splash' | 'auth' | 'profile' | 'onboarding' | 'subscription' | 'main'>('splash');
   const [user, setUser] = useState(null);
-  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
+  const [hasSubscription, setHasSubscription] = useState(false);
 
   useEffect(() => {
     // Check for existing session
@@ -53,12 +54,18 @@ const Index = () => {
       setUser(authUser);
       setCurrentScreen('profile');
     } else {
-      // Check if they've seen onboarding (using localStorage for now)
+      // Check if they've seen onboarding
       const hasSeenOnboarding = localStorage.getItem(`onboarding_${authUser.id}`);
       setUser({ ...authUser, profile });
       
+      // Check if they have an active subscription
+      const userSubscription = localStorage.getItem(`subscription_${authUser.id}`);
+      setHasSubscription(!!userSubscription);
+      
       if (!hasSeenOnboarding) {
         setCurrentScreen('onboarding');
+      } else if (!userSubscription) {
+        setCurrentScreen('subscription');
       } else {
         setCurrentScreen('main');
       }
@@ -69,10 +76,15 @@ const Index = () => {
     setUser(userData.user);
     
     if (userData.hasProfile) {
-      // Check onboarding status
+      // Check onboarding and subscription status
       const hasSeenOnboarding = localStorage.getItem(`onboarding_${userData.user.id}`);
+      const userSubscription = localStorage.getItem(`subscription_${userData.user.id}`);
+      setHasSubscription(!!userSubscription);
+      
       if (!hasSeenOnboarding) {
         setCurrentScreen('onboarding');
+      } else if (!userSubscription) {
+        setCurrentScreen('subscription');
       } else {
         setCurrentScreen('main');
       }
@@ -95,15 +107,30 @@ const Index = () => {
 
   const handleOnboardingComplete = () => {
     localStorage.setItem(`onboarding_${user.id}`, 'true');
+    
+    // Check if they have a subscription
+    const userSubscription = localStorage.getItem(`subscription_${user.id}`);
+    
+    if (!userSubscription) {
+      setCurrentScreen('subscription');
+    } else {
+      setCurrentScreen('main');
+    }
+  };
+
+  const handleSubscriptionComplete = () => {
+    localStorage.setItem(`subscription_${user.id}`, 'true');
+    setHasSubscription(true);
     setCurrentScreen('main');
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className="min-h-screen bg-safefit-white">
       {currentScreen === 'splash' && <SplashScreen />}
       {currentScreen === 'auth' && <AuthScreen onAuthSuccess={handleAuthSuccess} />}
       {currentScreen === 'profile' && <ProfileForm user={user} onComplete={handleProfileComplete} />}
       {currentScreen === 'onboarding' && <OnboardingScreen onComplete={handleOnboardingComplete} />}
+      {currentScreen === 'subscription' && <SubscriptionPage onComplete={handleSubscriptionComplete} />}
       {currentScreen === 'main' && <MainApp user={user} />}
     </div>
   );

@@ -1,19 +1,22 @@
 
-# Face-api.js Model Files
+# Face API.js Models
 
-This directory should contain the following model files for face-api.js:
+This directory contains the necessary face-detection and expression-recognition models for face-api.js.
 
-- `face_expression_model-shard1`
-- `face_expression_model-weights_manifest.json`
-- `face_landmark_68_model-shard1`
-- `face_landmark_68_model-weights_manifest.json`
-- `face_recognition_model-shard1`
-- `face_recognition_model-shard2`
-- `face_recognition_model-weights_manifest.json`
-- `tiny_face_detector_model-shard1`
-- `tiny_face_detector_model-weights_manifest.json`
+To complete the setup, please download the following files from the face-api.js GitHub repository 
+or download from the official distribution and place them in this directory:
 
-Please download these files from the official face-api.js repository:
-https://github.com/justadudewhohacks/face-api.js/tree/master/weights
+1. `tiny_face_detector_model-weights_manifest.json`
+2. `tiny_face_detector_model-shard1`
+3. `face_landmark_68_model-weights_manifest.json`
+4. `face_landmark_68_model-shard1`
+5. `face_expression_model-weights_manifest.json`
+6. `face_expression_model-shard1`
+7. `face_recognition_model-weights_manifest.json`
+8. `face_recognition_model-shard1`
+9. `face_recognition_model-shard2`
 
-After downloading, place them in this directory for the facial expression detection to work properly.
+These models enable the BroAI feature to detect faces and read facial expressions to provide
+emotion-aware responses.
+
+Download link: https://github.com/justadudewhohacks/face-api.js/tree/master/weights

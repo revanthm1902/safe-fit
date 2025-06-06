@@ -67,11 +67,13 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				},
 				safefit: {
-					dark: '#04080f',
-					primary: '#507dbc',
-					highlight: '#a1c6ea',
-					card: '#bbd1ea',
-					border: '#dae3e5'
+					dark: '#21295C',
+					primary: '#1B3B6F',
+					highlight: '#065A82',
+					card: '#1C7293',
+					border: '#E5E7EB',
+					light: '#F9FAFB',
+					white: '#FFFFFF'
 				}
 			},
 			borderRadius: {

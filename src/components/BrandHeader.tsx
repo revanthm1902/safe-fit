@@ -10,7 +10,7 @@ interface BrandHeaderProps {
 
 const BrandHeader = ({ onSettingsClick }: BrandHeaderProps) => {
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 bg-safefit-dark/90 backdrop-blur-lg border-b border-safefit-border/20">
+    <div className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-lg border-b border-safefit-border/20 shadow-sm">
       <div className="flex items-center justify-between px-6 py-4">
         <div className="flex-1" />
         
@@ -19,7 +19,7 @@ const BrandHeader = ({ onSettingsClick }: BrandHeaderProps) => {
           animate={{ opacity: 1, y: 0 }}
           className="flex-1 flex justify-center"
         >
-          <h1 className="text-2xl font-bold text-safefit-highlight text-glow font-poppins">
+          <h1 className="text-2xl font-bold text-safefit-dark font-poppins">
             SafeFit
           </h1>
         </motion.div>
@@ -29,7 +29,7 @@ const BrandHeader = ({ onSettingsClick }: BrandHeaderProps) => {
             variant="ghost"
             size="sm"
             onClick={onSettingsClick}
-            className="text-safefit-highlight hover:bg-safefit-primary/20"
+            className="text-safefit-primary hover:bg-safefit-light/90"
           >
             <Settings className="w-5 h-5" />
           </Button>

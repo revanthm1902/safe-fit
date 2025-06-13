@@ -33,10 +33,10 @@ const MessageList: React.FC<MessageListProps> = ({ messages, loading }) => {
             className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[85%] rounded-2xl px-4 py-3 shadow-md ${
+              className={`max-w-[85%] rounded-2xl px-4 py-3 ${
                 message.isUser
-                  ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-tr-none'
-                  : 'bg-white text-gray-800 rounded-tl-none border border-gray-100'
+                  ? 'bg-blue-600 text-white rounded-tr-none'
+                  : 'bg-gray-800 text-gray-100 rounded-tl-none border border-gray-700'
               }`}
             >
               <div className="flex items-start space-x-2">
@@ -44,8 +44,8 @@ const MessageList: React.FC<MessageListProps> = ({ messages, loading }) => {
                   <span className="text-lg mt-0.5">🤖</span>
                 )}
                 <div className="flex-1">
-                  <p className="leading-relaxed">{message.text}</p>
-                  <p className={`text-xs ${message.isUser ? 'text-white/70' : 'text-gray-500'} mt-2 flex items-center justify-between`}>
+                  <p className="leading-relaxed text-sm">{message.text}</p>
+                  <p className={`text-xs ${message.isUser ? 'text-blue-200' : 'text-gray-400'} mt-2 flex items-center justify-between`}>
                     <span>{message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                     {message.emotion && !message.isUser && (
                       <span className="ml-2 opacity-70">Detected: {message.emotion}</span>
@@ -63,22 +63,22 @@ const MessageList: React.FC<MessageListProps> = ({ messages, loading }) => {
             animate={{ opacity: 1 }}
             className="flex justify-start"
           >
-            <div className="bg-white text-gray-800 rounded-2xl rounded-tl-none px-4 py-3 shadow-md border border-gray-100">
+            <div className="bg-gray-800 text-gray-100 rounded-2xl rounded-tl-none px-4 py-3 border border-gray-700">
               <div className="flex items-center space-x-2">
                 <span className="text-lg">🤖</span>
                 <div className="flex space-x-1">
                   <motion.div 
-                    className="w-2 h-2 rounded-full bg-purple-400"
+                    className="w-2 h-2 rounded-full bg-blue-400"
                     animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
                     transition={{ duration: 1, repeat: Infinity, delay: 0 }}
                   />
                   <motion.div 
-                    className="w-2 h-2 rounded-full bg-blue-400"
+                    className="w-2 h-2 rounded-full bg-cyan-400"
                     animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
                     transition={{ duration: 1, repeat: Infinity, delay: 0.2 }}
                   />
                   <motion.div 
-                    className="w-2 h-2 rounded-full bg-pink-400"
+                    className="w-2 h-2 rounded-full bg-purple-400"
                     animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
                     transition={{ duration: 1, repeat: Infinity, delay: 0.4 }}
                   />

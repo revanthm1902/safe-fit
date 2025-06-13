@@ -122,9 +122,9 @@ const CameraControls: React.FC<CameraControlsProps> = ({
         disabled={!isModelLoaded || !hasAccess}
         variant="outline"
         size="sm"
-        className={`${cameraActive ? 'bg-red-100 border-red-300' : 'bg-purple-100 border-purple-300'} hover:scale-105 transition-transform`}
+        className={`border-gray-600 ${cameraActive ? 'bg-red-600 border-red-500 hover:bg-red-700' : 'bg-gray-800 hover:bg-gray-700'} text-white`}
       >
-        {cameraActive ? <CameraOff className="h-4 w-4 text-red-600" /> : <Camera className="h-4 w-4 text-purple-600" />}
+        {cameraActive ? <CameraOff className="h-4 w-4" /> : <Camera className="h-4 w-4" />}
       </Button>
 
       {cameraActive && (
@@ -132,9 +132,9 @@ const CameraControls: React.FC<CameraControlsProps> = ({
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
           exit={{ opacity: 0, height: 0 }}
-          className="mx-6 mb-4 relative"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
         >
-          <Card className="overflow-hidden bg-black/90 backdrop-blur-sm shadow-xl">
+          <Card className="overflow-hidden bg-gray-900 border-gray-700 shadow-xl max-w-md w-full">
             <div className="relative">
               <video
                 ref={videoRef}
@@ -157,6 +157,13 @@ const CameraControls: React.FC<CameraControlsProps> = ({
                   🎤 Listening...
                 </motion.div>
               )}
+              <Button
+                onClick={stopCamera}
+                className="absolute top-4 right-4 bg-red-600 hover:bg-red-700"
+                size="sm"
+              >
+                <CameraOff className="h-4 w-4" />
+              </Button>
             </div>
           </Card>
         </motion.div>

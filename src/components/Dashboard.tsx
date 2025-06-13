@@ -53,7 +53,7 @@ const Dashboard = () => {
         opacity: 1,
         y: 0
       }} className="mb-8">
-          <h1 className="text-3xl font-bold text-safefit-highlight mb-2 font-poppins">Good Morning!</h1>
+          <h1 className="text-3xl font-bold text-safefit-highlight mb-2 font-poppins">Hello User!</h1>
           <p className="text-safefit-card font-poppins">Here's your health overview for today</p>
         </motion.div>
 

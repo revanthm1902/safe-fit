@@ -1,31 +1,35 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Send, SmilePlus, Frown, Smile, Meh, Video, VideoOff } from 'lucide-react';
+import { Send, Mic, MicOff, Camera, CameraOff, Volume2, VolumeX, Heart, Sparkles } from 'lucide-react';
 import * as faceapi from 'face-api.js';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 
 const BroAI = () => {
-  const [messages, setMessages] = useState<{text: string; isUser: boolean; timestamp: Date}[]>([]);
+  const [messages, setMessages] = useState<{text: string; isUser: boolean; timestamp: Date; emotion?: string}[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [isModelLoaded, setIsModelLoaded] = useState(false);
   const [cameraActive, setCameraActive] = useState(false);
+  const [micActive, setMicActive] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
   const [emotion, setEmotion] = useState<string | null>(null);
+  const [isListening, setIsListening] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const recognitionRef = useRef<any>(null);
   const { isSubscribed, checkFeatureAccess } = useSubscription();
 
   const hasAccess = checkFeatureAccess('ai-assistant');
 
   useEffect(() => {
-    // Add initial greeting message
+    // Add initial greeting message with a friendly tone
     setMessages([
       {
-        text: "Hey there! I'm your BroAI assistant. How can I help you today with your health and wellness goals?",
+        text: "Hey buddy! 👋 I'm BroAI, your personal wellness companion! I'm here to help you crush your health and fitness goals. What's on your mind today?",
         isUser: false,
         timestamp: new Date()
       }
@@ -42,7 +46,7 @@ const BroAI = () => {
           faceapi.nets.faceExpressionNet.loadFromUri('/models')
         ]);
         setIsModelLoaded(true);
-        console.log("Face models loaded");
+        console.log("Face models loaded successfully");
       } catch (error) {
         console.error("Error loading face models:", error);
       }
@@ -53,27 +57,31 @@ const BroAI = () => {
 
   const startCamera = async () => {
     if (!isModelLoaded) {
-      alert("Face detection models are still loading. Please wait...");
+      speakText("Hey, I'm still loading my face detection models. Give me a moment!");
       return;
     }
     
     if (!hasAccess) {
-      alert("This feature requires a premium subscription");
+      speakText("You'll need a premium subscription to use my camera features!");
       return;
     }
     
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { width: 640, height: 480 },
+        audio: false 
+      });
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         setCameraActive(true);
+        speakText("Camera activated! I can now see your expressions!");
         
         videoRef.current.addEventListener('play', () => {
           const canvas = canvasRef.current;
           const displaySize = { 
-            width: videoRef.current?.videoWidth || 300, 
-            height: videoRef.current?.videoHeight || 225 
+            width: videoRef.current?.videoWidth || 640, 
+            height: videoRef.current?.videoHeight || 480 
           };
 
           if (canvas) {
@@ -94,9 +102,12 @@ const BroAI = () => {
                     return (prev[1] > current[1]) ? prev : current;
                   });
                 
-                // Only set if confident enough (above 0.5)
-                if (maxExpression[1] > 0.5) {
-                  setEmotion(maxExpression[0]);
+                if (maxExpression[1] > 0.6) {
+                  const newEmotion = maxExpression[0];
+                  if (newEmotion !== emotion) {
+                    setEmotion(newEmotion);
+                    handleEmotionChange(newEmotion);
+                  }
                 }
               }
               
@@ -108,12 +119,12 @@ const BroAI = () => {
                 faceapi.draw.drawFaceExpressions(canvas, resizedDetections);
               }
             }
-          }, 100);
+          }, 500);
         });
       }
     } catch (err) {
       console.error("Error accessing camera:", err);
-      alert("Could not access the camera. Please ensure you have given permission.");
+      speakText("Oops! I couldn't access your camera. Make sure you've given permission!");
     }
   };
 
@@ -132,13 +143,138 @@ const BroAI = () => {
       
       setCameraActive(false);
       setEmotion(null);
+      speakText("Camera turned off. I'm still here if you need me!");
     }
+  };
+
+  const startMicrophone = async () => {
+    if (!hasAccess) {
+      speakText("You'll need a premium subscription to use voice features!");
+      return;
+    }
+
+    try {
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+      
+      if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+        recognitionRef.current = new SpeechRecognition();
+        
+        recognitionRef.current.continuous = true;
+        recognitionRef.current.interimResults = true;
+        recognitionRef.current.lang = 'en-US';
+        
+        recognitionRef.current.onstart = () => {
+          setMicActive(true);
+          setIsListening(true);
+          speakText("I'm listening! Go ahead and speak.");
+        };
+        
+        recognitionRef.current.onresult = (event: any) => {
+          let finalTranscript = '';
+          
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            if (event.results[i].isFinal) {
+              finalTranscript += event.results[i][0].transcript;
+            }
+          }
+          
+          if (finalTranscript) {
+            setInput(finalTranscript);
+            setIsListening(false);
+          }
+        };
+        
+        recognitionRef.current.onerror = (event: any) => {
+          console.error('Speech recognition error:', event.error);
+          setMicActive(false);
+          setIsListening(false);
+        };
+        
+        recognitionRef.current.onend = () => {
+          setMicActive(false);
+          setIsListening(false);
+        };
+        
+        recognitionRef.current.start();
+      } else {
+        speakText("Sorry, your browser doesn't support speech recognition!");
+      }
+    } catch (err) {
+      console.error("Error accessing microphone:", err);
+      speakText("I couldn't access your microphone. Please check your permissions!");
+    }
+  };
+
+  const stopMicrophone = () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      setMicActive(false);
+      setIsListening(false);
+      speakText("Stopped listening.");
+    }
+  };
+
+  const speakText = (text: string) => {
+    if (!soundEnabled) return;
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 0.9;
+    utterance.pitch = 1.1;
+    utterance.volume = 0.8;
+    
+    // Try to use a more natural voice
+    const voices = speechSynthesis.getVoices();
+    const preferredVoice = voices.find(voice => 
+      voice.name.includes('Google') || voice.name.includes('Microsoft') || voice.default
+    );
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+    }
+    
+    speechSynthesis.speak(utterance);
+  };
+
+  const handleEmotionChange = (newEmotion: string) => {
+    let emotionResponse = "";
+    
+    switch(newEmotion) {
+      case 'happy':
+        emotionResponse = "I love seeing that smile! You're radiating positive energy! 😊";
+        break;
+      case 'sad':
+        emotionResponse = "Hey, I notice you seem a bit down. Remember, I'm here for you. Want to talk about it? 🤗";
+        break;
+      case 'angry':
+        emotionResponse = "You look a bit frustrated, buddy. Let's take a deep breath together and work through this. 😌";
+        break;
+      case 'surprised':
+        emotionResponse = "Whoa! You look surprised! Did I say something amazing? 😲";
+        break;
+      case 'fearful':
+        emotionResponse = "You seem worried. Don't worry, I'm here to help you feel better! 💪";
+        break;
+      case 'disgusted':
+        emotionResponse = "Not feeling great about something? Let's find a way to turn that around! 🌟";
+        break;
+      default:
+        emotionResponse = "I can see your expression - thanks for letting me read your mood! 👁️";
+    }
+    
+    const emotionMessage = {
+      text: emotionResponse,
+      isUser: false,
+      timestamp: new Date(),
+      emotion: newEmotion
+    };
+    
+    setMessages(prev => [...prev, emotionMessage]);
+    speakText(emotionResponse);
   };
 
   const handleSendMessage = async () => {
     if (!input.trim()) return;
     
-    // Add user message
     const userMessage = {
       text: input,
       isUser: true,
@@ -149,85 +285,84 @@ const BroAI = () => {
     setInput('');
     setLoading(true);
     
-    // Simulate AI response
     setTimeout(() => {
-      let response = "";
+      let response = getResponseForInput(input);
       
       // Emotion-aware responses
       if (emotion) {
-        switch(emotion) {
-          case 'happy':
-            response = `I see you're smiling! That's great! ${getResponseForInput(input)}`;
-            break;
-          case 'sad':
-            response = `You seem a bit down today. ${getResponseForInput(input)} Remember, I'm here to help you feel better.`;
-            break;
-          case 'angry':
-            response = `You look a bit frustrated. ${getResponseForInput(input)} Let's work on bringing that stress level down.`;
-            break;
-          case 'neutral':
-            response = getResponseForInput(input);
-            break;
-          default:
-            response = getResponseForInput(input);
-        }
-      } else {
-        response = getResponseForInput(input);
+        response = getEmotionAwareResponse(input, emotion);
       }
       
       const aiMessage = {
         text: response,
         isUser: false,
-        timestamp: new Date()
+        timestamp: new Date(),
+        emotion: emotion || undefined
       };
       
       setMessages(prev => [...prev, aiMessage]);
+      speakText(response);
       setLoading(false);
     }, 1000);
   };
 
+  const getEmotionAwareResponse = (input: string, currentEmotion: string) => {
+    const baseResponse = getResponseForInput(input);
+    
+    switch(currentEmotion) {
+      case 'happy':
+        return `Your positive energy is contagious! 😄 ${baseResponse} Keep that smile going!`;
+      case 'sad':
+        return `I can see you're feeling down, but I'm here for you. ${baseResponse} Remember, every small step counts! 🌈`;
+      case 'angry':
+        return `I sense some frustration. Let's channel that energy positively! ${baseResponse} Take a deep breath with me! 🧘‍♂️`;
+      case 'surprised':
+        return `You look amazed! ${baseResponse} I love seeing that curiosity! ✨`;
+      default:
+        return baseResponse;
+    }
+  };
+
   const getResponseForInput = (input: string) => {
-    // Simple response logic based on keywords
     const lowercaseInput = input.toLowerCase();
     
     if (lowercaseInput.includes('workout') || lowercaseInput.includes('exercise')) {
-      return "For your workout goals, I recommend a mix of cardio and strength training. Start with 30 minutes of moderate intensity cardio 3 times a week, and add 2 days of full-body strength training. Remember to warm up and cool down!";
+      return "Let's get you moving, champ! 💪 I recommend starting with a balanced routine: 30 minutes of cardio 3x weekly plus 2 strength training sessions. Want me to create a personalized plan for you?";
     }
     
     if (lowercaseInput.includes('diet') || lowercaseInput.includes('nutrition') || lowercaseInput.includes('food')) {
-      return "Nutrition is key to your health goals! Focus on whole foods like fruits, vegetables, lean proteins, and whole grains. Stay hydrated by drinking at least 8 glasses of water daily. Would you like me to suggest a meal plan?";
+      return "Nutrition is your superpower! 🥗 Focus on colorful whole foods, lean proteins, and plenty of water. Think of it as fueling your awesome body! Need some tasty meal ideas?";
     }
     
     if (lowercaseInput.includes('sleep') || lowercaseInput.includes('tired')) {
-      return "Quality sleep is crucial for recovery! Try to get 7-9 hours of sleep each night. Establish a regular bedtime routine, avoid screens before bed, and keep your bedroom cool and dark for optimal rest.";
+      return "Sleep is when the magic happens! 😴 Aim for 7-9 hours in a cool, dark room. Your body repairs and grows stronger while you dream. Want some bedtime routine tips?";
     }
     
-    if (lowercaseInput.includes('stress') || lowercaseInput.includes('anxious') || lowercaseInput.includes('anxiety')) {
-      return "I understand dealing with stress can be challenging. Consider practicing mindfulness meditation for 10 minutes daily, try deep breathing exercises, or take short walks outdoors. These small habits can significantly reduce stress levels.";
+    if (lowercaseInput.includes('stress') || lowercaseInput.includes('anxious')) {
+      return "Stress happens to the best of us! 🌱 Try the 4-7-8 breathing technique: inhale for 4, hold for 7, exhale for 8. You've got this, and I believe in you!";
     }
     
     if (lowercaseInput.includes('motivation') || lowercaseInput.includes('lazy')) {
-      return "Finding motivation can be tough! Try setting small, achievable goals and celebrate when you reach them. Find a workout buddy or join a community with similar goals. Remember why you started this journey!";
+      return "Everyone has those days! 🚀 Remember why you started this journey. Start small - even 5 minutes counts! Progress, not perfection, is the goal!";
     }
     
-    return "That's a great question! As your health and wellness AI, I'd recommend focusing on balanced nutrition, regular exercise, proper hydration, and adequate rest. Would you like more specific advice on any of these areas?";
+    return "That's a fantastic question! 🌟 As your wellness buddy, I'm here to help you thrive! Whether it's fitness, nutrition, or mindset - we'll tackle it together! What aspect interests you most?";
   };
 
   const getEmotionIcon = () => {
-    if (!emotion) return null;
+    if (!emotion) return <Heart className="h-5 w-5 text-pink-500" />;
     
-    switch(emotion) {
-      case 'happy':
-        return <Smile className="h-6 w-6 text-green-500" />;
-      case 'sad':
-        return <Frown className="h-6 w-6 text-blue-500" />;
-      case 'angry':
-        return <Frown className="h-6 w-6 text-red-500" />;
-      case 'neutral':
-        return <Meh className="h-6 w-6 text-gray-500" />;
-      default:
-        return <SmilePlus className="h-6 w-6 text-safefit-primary" />;
-    }
+    const emotionMap: { [key: string]: string } = {
+      'happy': '😊',
+      'sad': '😢',
+      'angry': '😤',
+      'surprised': '😲',
+      'fearful': '😰',
+      'disgusted': '😒',
+      'neutral': '😐'
+    };
+    
+    return <span className="text-lg">{emotionMap[emotion] || '🤖'}</span>;
   };
 
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
@@ -237,122 +372,214 @@ const BroAI = () => {
   }, [messages]);
 
   return (
-    <div className="min-h-screen bg-safefit-white p-0">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-0">
       <div className="flex flex-col h-[calc(100vh-8rem)]">
-        <div className="p-4 pt-20">
+        <div className="p-6 pt-24">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-4"
+            className="mb-6"
           >
             <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold text-safefit-dark mb-2">BroAI</h1>
-                <p className="text-safefit-primary">Your personal AI health assistant</p>
-              </div>
-              <div className="flex items-center space-x-2">
-                {emotion && (
-                  <div className="flex items-center bg-safefit-light py-1 px-3 rounded-full">
-                    {getEmotionIcon()}
-                    <span className="ml-2 text-sm capitalize text-safefit-primary">{emotion}</span>
+              <div className="flex items-center space-x-4">
+                <motion.div 
+                  className="relative"
+                  animate={{ 
+                    rotate: cameraActive ? [0, 5, -5, 0] : 0,
+                    scale: micActive ? [1, 1.1, 1] : 1 
+                  }}
+                  transition={{ 
+                    duration: 2, 
+                    repeat: cameraActive || micActive ? Infinity : 0 
+                  }}
+                >
+                  <div className="w-16 h-16 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg">
+                    <Sparkles className="h-8 w-8 text-white" />
                   </div>
+                  {(cameraActive || micActive) && (
+                    <motion.div 
+                      className="absolute -top-1 -right-1 w-6 h-6 bg-green-400 rounded-full flex items-center justify-center"
+                      animate={{ scale: [1, 1.2, 1] }}
+                      transition={{ duration: 1, repeat: Infinity }}
+                    >
+                      <span className="text-xs">🟢</span>
+                    </motion.div>
+                  )}
+                </motion.div>
+                <div>
+                  <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                    BroAI
+                  </h1>
+                  <p className="text-gray-600 font-medium">Your friendly wellness companion</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-3">
+                {emotion && (
+                  <motion.div 
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="flex items-center bg-white/80 backdrop-blur-sm py-2 px-4 rounded-full shadow-md border"
+                  >
+                    {getEmotionIcon()}
+                    <span className="ml-2 text-sm font-medium capitalize text-gray-700">{emotion}</span>
+                  </motion.div>
                 )}
+                
+                <Button
+                  onClick={soundEnabled ? () => setSoundEnabled(false) : () => setSoundEnabled(true)}
+                  variant="outline"
+                  size="sm"
+                  className={`${soundEnabled ? 'bg-green-100 border-green-300' : 'bg-gray-100'} hover:scale-105 transition-transform`}
+                >
+                  {soundEnabled ? <Volume2 className="h-4 w-4 text-green-600" /> : <VolumeX className="h-4 w-4 text-gray-500" />}
+                </Button>
+                
+                <Button
+                  onClick={micActive ? stopMicrophone : startMicrophone}
+                  disabled={!hasAccess}
+                  variant="outline"
+                  size="sm"
+                  className={`${micActive ? 'bg-red-100 border-red-300' : 'bg-blue-100 border-blue-300'} hover:scale-105 transition-transform`}
+                >
+                  {micActive ? <MicOff className="h-4 w-4 text-red-600" /> : <Mic className="h-4 w-4 text-blue-600" />}
+                </Button>
+                
                 <Button
                   onClick={cameraActive ? stopCamera : startCamera}
                   disabled={!isModelLoaded || !hasAccess}
                   variant="outline"
-                  className="bg-safefit-light border-safefit-border text-safefit-primary hover:bg-safefit-primary hover:text-white"
+                  size="sm"
+                  className={`${cameraActive ? 'bg-red-100 border-red-300' : 'bg-purple-100 border-purple-300'} hover:scale-105 transition-transform`}
                 >
-                  {cameraActive ? <VideoOff className="h-5 w-5" /> : <Video className="h-5 w-5" />}
+                  {cameraActive ? <CameraOff className="h-4 w-4 text-red-600" /> : <Camera className="h-4 w-4 text-purple-600" />}
                 </Button>
               </div>
             </div>
           </motion.div>
         </div>
         
-        {cameraActive && (
-          <motion.div 
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            className="mx-4 mb-4 relative"
-          >
-            <Card className="overflow-hidden bg-black">
-              <div className="relative">
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="w-full h-auto"
-                  style={{ maxHeight: '200px', objectFit: 'cover' }}
-                />
-                <canvas
-                  ref={canvasRef}
-                  className="absolute top-0 left-0 w-full h-full"
-                />
-              </div>
-            </Card>
-          </motion.div>
-        )}
+        <AnimatePresence>
+          {cameraActive && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mx-6 mb-4 relative"
+            >
+              <Card className="overflow-hidden bg-black/90 backdrop-blur-sm shadow-xl">
+                <div className="relative">
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="w-full h-auto rounded-lg"
+                    style={{ maxHeight: '300px', objectFit: 'cover' }}
+                  />
+                  <canvas
+                    ref={canvasRef}
+                    className="absolute top-0 left-0 w-full h-full rounded-lg"
+                  />
+                  {isListening && (
+                    <motion.div 
+                      className="absolute bottom-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium"
+                      animate={{ opacity: [0.5, 1, 0.5] }}
+                      transition={{ duration: 1, repeat: Infinity }}
+                    >
+                      🎤 Listening...
+                    </motion.div>
+                  )}
+                </div>
+              </Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
         
         {!isSubscribed && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mx-4 mb-4"
+            className="mx-6 mb-4"
           >
-            <Card className="p-4 border-dashed border-2 border-safefit-highlight/50 bg-safefit-light/50">
+            <Card className="p-4 border-dashed border-2 border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50">
               <div className="text-center py-3">
-                <p className="text-safefit-dark font-medium mb-2">Premium Feature</p>
-                <p className="text-safefit-primary text-sm mb-3">
-                  Subscribe to unlock all AI features including emotion detection
+                <p className="text-purple-800 font-medium mb-2">🚀 Premium Feature</p>
+                <p className="text-purple-600 text-sm mb-3">
+                  Unlock voice chat, emotion detection, and advanced AI features
                 </p>
                 <Button 
-                  className="bg-safefit-highlight hover:bg-safefit-highlight/90"
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
                   size="sm"
                 >
-                  Upgrade Now
+                  Upgrade Now ✨
                 </Button>
               </div>
             </Card>
           </motion.div>
         )}
         
-        <div className="flex-1 overflow-y-auto px-4 pb-4">
+        <div className="flex-1 overflow-y-auto px-6 pb-4">
           <div className="space-y-4">
             {messages.map((message, index) => (
               <motion.div
                 key={index}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 > 1 ? 0.1 : index * 0.1 }}
+                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ delay: Math.min(index * 0.1, 0.5) }}
                 className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[75%] rounded-2xl px-4 py-3 ${
+                  className={`max-w-[85%] rounded-2xl px-4 py-3 shadow-md ${
                     message.isUser
-                      ? 'bg-safefit-highlight text-white rounded-tr-none'
-                      : 'bg-safefit-light text-safefit-dark rounded-tl-none'
+                      ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-tr-none'
+                      : 'bg-white text-gray-800 rounded-tl-none border border-gray-100'
                   }`}
                 >
-                  <p>{message.text}</p>
-                  <p className={`text-xs ${message.isUser ? 'text-white/70' : 'text-safefit-primary'} mt-1`}>
-                    {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </p>
+                  <div className="flex items-start space-x-2">
+                    {!message.isUser && (
+                      <span className="text-lg mt-0.5">🤖</span>
+                    )}
+                    <div className="flex-1">
+                      <p className="leading-relaxed">{message.text}</p>
+                      <p className={`text-xs ${message.isUser ? 'text-white/70' : 'text-gray-500'} mt-2 flex items-center justify-between`}>
+                        <span>{message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        {message.emotion && !message.isUser && (
+                          <span className="ml-2 opacity-70">Detected: {message.emotion}</span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </motion.div>
             ))}
+            
             {loading && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 className="flex justify-start"
               >
-                <div className="bg-safefit-light text-safefit-dark rounded-2xl rounded-tl-none px-4 py-3">
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 rounded-full bg-safefit-primary animate-bounce" />
-                    <div className="w-2 h-2 rounded-full bg-safefit-primary animate-bounce" style={{ animationDelay: '0.2s' }} />
-                    <div className="w-2 h-2 rounded-full bg-safefit-primary animate-bounce" style={{ animationDelay: '0.4s' }} />
+                <div className="bg-white text-gray-800 rounded-2xl rounded-tl-none px-4 py-3 shadow-md border border-gray-100">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-lg">🤖</span>
+                    <div className="flex space-x-1">
+                      <motion.div 
+                        className="w-2 h-2 rounded-full bg-purple-400"
+                        animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
+                        transition={{ duration: 1, repeat: Infinity, delay: 0 }}
+                      />
+                      <motion.div 
+                        className="w-2 h-2 rounded-full bg-blue-400"
+                        animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
+                        transition={{ duration: 1, repeat: Infinity, delay: 0.2 }}
+                      />
+                      <motion.div 
+                        className="w-2 h-2 rounded-full bg-pink-400"
+                        animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
+                        transition={{ duration: 1, repeat: Infinity, delay: 0.4 }}
+                      />
+                    </div>
                   </div>
                 </div>
               </motion.div>
@@ -361,24 +588,33 @@ const BroAI = () => {
           </div>
         </div>
         
-        <div className="p-4 border-t border-safefit-border bg-white">
-          <div className="flex space-x-2">
+        <div className="p-6 border-t border-gray-200 bg-white/80 backdrop-blur-sm">
+          <div className="flex space-x-3">
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask BroAI about health, fitness, or wellness..."
+              placeholder={isListening ? "Listening..." : "Ask BroAI anything about wellness, fitness, or health..."}
               onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-              disabled={loading || !hasAccess}
-              className="border-safefit-border focus:border-safefit-highlight"
+              disabled={loading || !hasAccess || isListening}
+              className="border-gray-300 focus:border-purple-400 focus:ring-purple-400 bg-white/90 backdrop-blur-sm rounded-xl"
             />
             <Button 
               onClick={handleSendMessage} 
-              disabled={loading || !input.trim() || !hasAccess}
-              className="bg-safefit-highlight hover:bg-safefit-highlight/90 text-white"
+              disabled={loading || !input.trim() || !hasAccess || isListening}
+              className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white rounded-xl px-6 hover:scale-105 transition-transform"
             >
               <Send className="h-5 w-5" />
             </Button>
           </div>
+          {isListening && (
+            <motion.p 
+              className="text-center text-sm text-purple-600 mt-2 font-medium"
+              animate={{ opacity: [0.5, 1, 0.5] }}
+              transition={{ duration: 1, repeat: Infinity }}
+            >
+              🎤 Speak now... I'm listening!
+            </motion.p>
+          )}
         </div>
       </div>
     </div>

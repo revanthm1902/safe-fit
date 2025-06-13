@@ -70,7 +70,7 @@ const Health = () => {
         }} whileTap={{
           scale: 0.95
         }}>
-              <Button onClick={() => setSelectedMetric(metric.id)} variant="outline" className="bg-safefit-highlight">
+              <Button onClick={() => setSelectedMetric(metric.id)} variant="outline" className={`w-full p-4 h-auto flex flex-col items-center border-white/20 transition-all ${isSelected ? 'bg-white/20 border-teal-400 text-white' : 'bg-white/10 text-gray-300 hover:bg-white/15'}`}>
                 <Icon className="w-6 h-6 mb-2" style={{
               color: isSelected ? metric.color : undefined
             }} />

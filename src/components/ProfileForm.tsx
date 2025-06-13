@@ -30,7 +30,6 @@ const ProfileForm = ({ user, onComplete }: ProfileFormProps) => {
     setLoading(true);
 
     try {
-      // Store in Supabase
       const { error } = await supabase
         .from('user_profiles')
         .update({
@@ -40,13 +39,6 @@ const ProfileForm = ({ user, onComplete }: ProfileFormProps) => {
         .eq('user_id', user.id);
 
       if (error) throw error;
-
-      // Store in localStorage for quick access
-      localStorage.setItem('userProfile', JSON.stringify({
-        userId: user.id,
-        email: user.email,
-        ...formData
-      }));
 
       toast({
         title: "Profile completed!",

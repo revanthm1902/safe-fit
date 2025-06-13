@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Send, SmilePlus, Frown, Smile, Meh, Video, VideoOff, Sparkles, Brain, Zap } from 'lucide-react';
+import { Send, SmilePlus, Frown, Smile, Meh, Video, VideoOff } from 'lucide-react';
 import * as faceapi from 'face-api.js';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 
@@ -21,10 +22,10 @@ const BroAI = () => {
   const hasAccess = checkFeatureAccess('ai-assistant');
 
   useEffect(() => {
-    // Add initial greeting message with animation
+    // Add initial greeting message
     setMessages([
       {
-        text: "🚀 Hey there, champion! I'm your BroAI - your ultimate health and wellness wingman! Ready to crush those fitness goals together? 💪",
+        text: "Hey there! I'm your BroAI assistant. How can I help you today with your health and wellness goals?",
         isUser: false,
         timestamp: new Date()
       }
@@ -148,30 +149,30 @@ const BroAI = () => {
     setInput('');
     setLoading(true);
     
-    // Simulate AI response with more engaging responses
+    // Simulate AI response
     setTimeout(() => {
       let response = "";
       
-      // Emotion-aware responses with more personality
+      // Emotion-aware responses
       if (emotion) {
         switch(emotion) {
           case 'happy':
-            response = `🌟 Love that energy! You're radiating positivity! ${getResponseForInput(input)} Keep that smile shining, superstar!`;
+            response = `I see you're smiling! That's great! ${getResponseForInput(input)}`;
             break;
           case 'sad':
-            response = `💙 Hey, I see you might be feeling down. That's totally okay - we all have those days. ${getResponseForInput(input)} Remember, I'm here to lift you up and help you feel amazing again!`;
+            response = `You seem a bit down today. ${getResponseForInput(input)} Remember, I'm here to help you feel better.`;
             break;
           case 'angry':
-            response = `🔥 Whoa, feeling fired up? Let's channel that intensity into something awesome! ${getResponseForInput(input)} Sometimes our strongest emotions fuel our biggest breakthroughs!`;
+            response = `You look a bit frustrated. ${getResponseForInput(input)} Let's work on bringing that stress level down.`;
             break;
           case 'neutral':
-            response = `💯 ${getResponseForInput(input)}`;
+            response = getResponseForInput(input);
             break;
           default:
-            response = `✨ ${getResponseForInput(input)}`;
+            response = getResponseForInput(input);
         }
       } else {
-        response = `🎯 ${getResponseForInput(input)}`;
+        response = getResponseForInput(input);
       }
       
       const aiMessage = {
@@ -186,29 +187,30 @@ const BroAI = () => {
   };
 
   const getResponseForInput = (input: string) => {
+    // Simple response logic based on keywords
     const lowercaseInput = input.toLowerCase();
     
     if (lowercaseInput.includes('workout') || lowercaseInput.includes('exercise')) {
-      return "🏋️‍♂️ Time to get SWOLE! I recommend mixing it up with cardio and strength training. Start with 30 minutes of heart-pumping cardio 3x a week, plus 2 days of muscle-building strength work. Don't forget to warm up and cool down - your body will thank you later!";
+      return "For your workout goals, I recommend a mix of cardio and strength training. Start with 30 minutes of moderate intensity cardio 3 times a week, and add 2 days of full-body strength training. Remember to warm up and cool down!";
     }
     
     if (lowercaseInput.includes('diet') || lowercaseInput.includes('nutrition') || lowercaseInput.includes('food')) {
-      return "🥗 Fuel your body like the machine it is! Focus on whole foods - colorful fruits, leafy greens, lean proteins, and whole grains. Hydrate like a champion with at least 8 glasses of H2O daily. Want me to hook you up with a killer meal plan?";
+      return "Nutrition is key to your health goals! Focus on whole foods like fruits, vegetables, lean proteins, and whole grains. Stay hydrated by drinking at least 8 glasses of water daily. Would you like me to suggest a meal plan?";
     }
     
     if (lowercaseInput.includes('sleep') || lowercaseInput.includes('tired')) {
-      return "😴 Sleep is your secret weapon for recovery! Aim for 7-9 hours of quality shut-eye. Create a bedtime ritual, ditch the screens before bed, and keep your room cool and dark. Your gains happen while you snooze!";
+      return "Quality sleep is crucial for recovery! Try to get 7-9 hours of sleep each night. Establish a regular bedtime routine, avoid screens before bed, and keep your bedroom cool and dark for optimal rest.";
     }
     
     if (lowercaseInput.includes('stress') || lowercaseInput.includes('anxious') || lowercaseInput.includes('anxiety')) {
-      return "🧘‍♂️ Stress is just energy waiting to be redirected! Try 10 minutes of mindfulness daily, practice deep breathing, or take nature walks. These small habits are game-changers for your mental wellness!";
+      return "I understand dealing with stress can be challenging. Consider practicing mindfulness meditation for 10 minutes daily, try deep breathing exercises, or take short walks outdoors. These small habits can significantly reduce stress levels.";
     }
     
     if (lowercaseInput.includes('motivation') || lowercaseInput.includes('lazy')) {
-      return "🔥 Motivation is like a muscle - the more you flex it, the stronger it gets! Set small, achievable goals and celebrate every win. Find your squad or join our community. Remember your WHY - that's your superpower!";
+      return "Finding motivation can be tough! Try setting small, achievable goals and celebrate when you reach them. Find a workout buddy or join a community with similar goals. Remember why you started this journey!";
     }
     
-    return "🎪 That's an awesome question! As your AI wellness coach, I'm all about that balanced life - killer nutrition, consistent movement, hydration on point, and rest like a pro. What area should we dive deeper into first?";
+    return "That's a great question! As your health and wellness AI, I'd recommend focusing on balanced nutrition, regular exercise, proper hydration, and adequate rest. Would you like more specific advice on any of these areas?";
   };
 
   const getEmotionIcon = () => {
@@ -235,7 +237,7 @@ const BroAI = () => {
   }, [messages]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 p-0">
+    <div className="min-h-screen bg-safefit-white p-0">
       <div className="flex flex-col h-[calc(100vh-8rem)]">
         <div className="p-4 pt-20">
           <motion.div
@@ -244,73 +246,22 @@ const BroAI = () => {
             className="mb-4"
           >
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                {/* Enhanced BroAI Icon */}
-                <motion.div
-                  initial={{ scale: 0, rotate: -180 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{ duration: 0.8, ease: "easeOut" }}
-                  className="relative"
-                >
-                  <div className="w-16 h-16 bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 rounded-full flex items-center justify-center shadow-lg relative overflow-hidden">
-                    {/* Animated background effect */}
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                      className="absolute inset-0 bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 opacity-30"
-                    />
-                    <Brain className="w-8 h-8 text-white z-10" />
-                    {/* Sparkle effects */}
-                    <motion.div
-                      animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                      className="absolute top-1 right-1"
-                    >
-                      <Sparkles className="w-3 h-3 text-yellow-300" />
-                    </motion.div>
-                  </div>
-                </motion.div>
-                
-                <div>
-                  <motion.h1 
-                    initial={{ x: -20, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: 0.3 }}
-                    className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent"
-                  >
-                    BroAI ⚡
-                  </motion.h1>
-                  <motion.p 
-                    initial={{ x: -20, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: 0.4 }}
-                    className="text-purple-600 font-medium"
-                  >
-                    Your Intelligent Wellness Companion
-                  </motion.p>
-                </div>
+              <div>
+                <h1 className="text-3xl font-bold text-safefit-dark mb-2">BroAI</h1>
+                <p className="text-safefit-primary">Your personal AI health assistant</p>
               </div>
-              
               <div className="flex items-center space-x-2">
-                <AnimatePresence>
-                  {emotion && (
-                    <motion.div
-                      initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={{ scale: 0, opacity: 0 }}
-                      className="flex items-center bg-white/80 backdrop-blur-sm py-2 px-4 rounded-full shadow-lg border border-purple-200"
-                    >
-                      {getEmotionIcon()}
-                      <span className="ml-2 text-sm capitalize font-medium text-purple-700">{emotion}</span>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-                
+                {emotion && (
+                  <div className="flex items-center bg-safefit-light py-1 px-3 rounded-full">
+                    {getEmotionIcon()}
+                    <span className="ml-2 text-sm capitalize text-safefit-primary">{emotion}</span>
+                  </div>
+                )}
                 <Button
                   onClick={cameraActive ? stopCamera : startCamera}
                   disabled={!isModelLoaded || !hasAccess}
                   variant="outline"
-                  className="bg-white/80 backdrop-blur-sm border-purple-200 text-purple-600 hover:bg-purple-50 hover:border-purple-300 shadow-lg"
+                  className="bg-safefit-light border-safefit-border text-safefit-primary hover:bg-safefit-primary hover:text-white"
                 >
                   {cameraActive ? <VideoOff className="h-5 w-5" /> : <Video className="h-5 w-5" />}
                 </Button>
@@ -325,7 +276,7 @@ const BroAI = () => {
             animate={{ opacity: 1, height: 'auto' }}
             className="mx-4 mb-4 relative"
           >
-            <Card className="overflow-hidden bg-black shadow-xl border border-purple-200">
+            <Card className="overflow-hidden bg-black">
               <div className="relative">
                 <video
                   ref={videoRef}
@@ -350,20 +301,16 @@ const BroAI = () => {
             animate={{ opacity: 1, y: 0 }}
             className="mx-4 mb-4"
           >
-            <Card className="p-4 border-dashed border-2 border-purple-300 bg-gradient-to-r from-purple-50 to-blue-50 shadow-lg">
+            <Card className="p-4 border-dashed border-2 border-safefit-highlight/50 bg-safefit-light/50">
               <div className="text-center py-3">
-                <div className="flex items-center justify-center mb-2">
-                  <Zap className="h-6 w-6 text-purple-600 mr-2" />
-                  <p className="text-purple-800 font-bold">Premium Feature</p>
-                </div>
-                <p className="text-purple-600 text-sm mb-3">
-                  Unlock all AI superpowers including emotion detection & advanced insights
+                <p className="text-safefit-dark font-medium mb-2">Premium Feature</p>
+                <p className="text-safefit-primary text-sm mb-3">
+                  Subscribe to unlock all AI features including emotion detection
                 </p>
                 <Button 
-                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg"
+                  className="bg-safefit-highlight hover:bg-safefit-highlight/90"
                   size="sm"
                 >
-                  <Sparkles className="h-4 w-4 mr-2" />
                   Upgrade Now
                 </Button>
               </div>
@@ -376,20 +323,20 @@ const BroAI = () => {
             {messages.map((message, index) => (
               <motion.div
                 key={index}
-                initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ delay: index * 0.05 > 0.3 ? 0.1 : index * 0.05 }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 > 1 ? 0.1 : index * 0.1 }}
                 className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[75%] rounded-2xl px-4 py-3 shadow-lg ${
+                  className={`max-w-[75%] rounded-2xl px-4 py-3 ${
                     message.isUser
-                      ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-tr-sm'
-                      : 'bg-white/80 backdrop-blur-sm text-gray-800 rounded-tl-sm border border-purple-100'
+                      ? 'bg-safefit-highlight text-white rounded-tr-none'
+                      : 'bg-safefit-light text-safefit-dark rounded-tl-none'
                   }`}
                 >
-                  <p className="leading-relaxed">{message.text}</p>
-                  <p className={`text-xs ${message.isUser ? 'text-purple-100' : 'text-purple-500'} mt-2 opacity-75`}>
+                  <p>{message.text}</p>
+                  <p className={`text-xs ${message.isUser ? 'text-white/70' : 'text-safefit-primary'} mt-1`}>
                     {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
@@ -401,23 +348,11 @@ const BroAI = () => {
                 animate={{ opacity: 1 }}
                 className="flex justify-start"
               >
-                <div className="bg-white/80 backdrop-blur-sm text-gray-800 rounded-2xl rounded-tl-sm px-4 py-3 shadow-lg border border-purple-100">
+                <div className="bg-safefit-light text-safefit-dark rounded-2xl rounded-tl-none px-4 py-3">
                   <div className="flex space-x-1">
-                    <motion.div 
-                      animate={{ scale: [1, 1.2, 1] }}
-                      transition={{ duration: 0.6, repeat: Infinity, delay: 0 }}
-                      className="w-2 h-2 rounded-full bg-purple-500" 
-                    />
-                    <motion.div 
-                      animate={{ scale: [1, 1.2, 1] }}
-                      transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }}
-                      className="w-2 h-2 rounded-full bg-blue-500" 
-                    />
-                    <motion.div 
-                      animate={{ scale: [1, 1.2, 1] }}
-                      transition={{ duration: 0.6, repeat: Infinity, delay: 0.4 }}
-                      className="w-2 h-2 rounded-full bg-indigo-500" 
-                    />
+                    <div className="w-2 h-2 rounded-full bg-safefit-primary animate-bounce" />
+                    <div className="w-2 h-2 rounded-full bg-safefit-primary animate-bounce" style={{ animationDelay: '0.2s' }} />
+                    <div className="w-2 h-2 rounded-full bg-safefit-primary animate-bounce" style={{ animationDelay: '0.4s' }} />
                   </div>
                 </div>
               </motion.div>
@@ -426,20 +361,20 @@ const BroAI = () => {
           </div>
         </div>
         
-        <div className="p-4 border-t border-purple-200 bg-white/80 backdrop-blur-sm">
+        <div className="p-4 border-t border-safefit-border bg-white">
           <div className="flex space-x-2">
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask BroAI anything about health, fitness, or wellness..."
+              placeholder="Ask BroAI about health, fitness, or wellness..."
               onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
               disabled={loading || !hasAccess}
-              className="border-purple-200 focus:border-purple-400 bg-white/90 placeholder-purple-400"
+              className="border-safefit-border focus:border-safefit-highlight"
             />
             <Button 
               onClick={handleSendMessage} 
               disabled={loading || !input.trim() || !hasAccess}
-              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg"
+              className="bg-safefit-highlight hover:bg-safefit-highlight/90 text-white"
             >
               <Send className="h-5 w-5" />
             </Button>

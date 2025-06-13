@@ -30,10 +30,10 @@ const EmotionDisplay: React.FC<EmotionDisplayProps> = ({ emotion }) => {
     <motion.div 
       initial={{ scale: 0 }}
       animate={{ scale: 1 }}
-      className="flex items-center bg-gray-800/80 backdrop-blur-sm py-2 px-4 rounded-full border border-gray-600"
+      className="flex items-center bg-white/80 backdrop-blur-sm py-2 px-4 rounded-full shadow-md border"
     >
       {getEmotionIcon()}
-      <span className="ml-2 text-sm font-medium capitalize text-gray-200">{emotion}</span>
+      <span className="ml-2 text-sm font-medium capitalize text-gray-700">{emotion}</span>
     </motion.div>
   );
 };

@@ -94,9 +94,9 @@ const MicrophoneControls: React.FC<MicrophoneControlsProps> = ({
       disabled={!hasAccess}
       variant="outline"
       size="sm"
-      className={`border-gray-600 ${micActive ? 'bg-red-600 border-red-500 hover:bg-red-700' : 'bg-gray-800 hover:bg-gray-700'} text-white`}
+      className={`${micActive ? 'bg-red-100 border-red-300' : 'bg-blue-100 border-blue-300'} hover:scale-105 transition-transform`}
     >
-      {micActive ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+      {micActive ? <MicOff className="h-4 w-4 text-red-600" /> : <Mic className="h-4 w-4 text-blue-600" />}
     </Button>
   );
 };

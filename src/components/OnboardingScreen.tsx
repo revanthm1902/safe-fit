@@ -105,7 +105,7 @@ const OnboardingScreen = ({
               </div>
 
               <div className="flex space-x-4">
-                <Button onClick={skipOnboarding} variant="outline" className="flex-1 border-white/30 hover:bg-white/10 text-slate-50">
+                <Button onClick={skipOnboarding} variant="outline" className="flex-1 border-white/30 text-slate-50 bg-safefit-card">
                   Skip
                 </Button>
                 <Button onClick={nextStep} className="flex-1 bg-gradient-to-r from-teal-500 to-purple-600 hover:from-teal-600 hover:to-purple-700 text-white">

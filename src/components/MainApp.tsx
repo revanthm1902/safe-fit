@@ -29,18 +29,13 @@ const MainApp = ({ user }: MainAppProps) => {
     setIsPasskeyVerified(true);
   };
 
-  const handleSignOut = () => {
-    // This will be handled by the Settings component
-    setShowSettings(false);
-  };
-
   if (!isPasskeyVerified) {
     return <SecurityPasskey user={user} onPasskeyVerified={handlePasskeyVerified} />;
   }
 
   const renderActiveScreen = () => {
     if (showSettings) {
-      return <Settings user={user} onSignOut={handleSignOut} />;
+      return <Settings user={user} onBack={handleSettingsToggle} />;
     }
 
     switch (activeTab) {

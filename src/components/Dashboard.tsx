@@ -67,20 +67,7 @@ const Dashboard = () => {
       }} transition={{
         delay: 0.1
       }} className="mb-6">
-          <Card className="p-6 bg-gradient-to-r from-safefit-primary/20 to-safefit-highlight/20 backdrop-blur-lg border border-safefit-border/30">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <Crown className="w-8 h-8 text-yellow-500" />
-                <div>
-                  <h3 className="text-lg font-bold text-safefit-highlight font-poppins">Premium Plan</h3>
-                  <p className="text-safefit-card text-sm font-poppins">Valid until Dec 31, 2024</p>
-                </div>
-              </div>
-              <Button className="bg-safefit-primary hover:bg-safefit-primary/90 text-white font-poppins">
-                See All Plans
-              </Button>
-            </div>
-          </Card>
+          
         </motion.div>
 
         {/* Vitals Grid */}

@@ -105,7 +105,7 @@ const Dashboard = () => {
                     <div className={`p-3 rounded-full bg-gradient-to-r ${item.color}`}>
                       <Icon className="w-6 h-6 text-white" />
                     </div>
-                    <div className="flex items-center text-safefit-primary text-sm font-poppins">
+                    <div className="flex items-center text-safefit-primary text-sm font-poppins bg-green-500">
                       <TrendingUp className="w-4 h-4 mr-1" />
                       {item.trend}
                     </div>

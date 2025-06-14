@@ -73,7 +73,7 @@ const NationalEmergencyContacts = () => {
           <Building className="h-6 w-6 text-safefit-highlight" />
           <h3 className="text-xl font-bold text-safefit-dark">National Emergency Contacts</h3>
         </div>
-        <Button onClick={() => setIsExpanded(!isExpanded)} variant="outline" size="sm" className="flex items-center space-x-2">
+        <Button onClick={() => setIsExpanded(!isExpanded)} variant="outline" size="sm" className="flex items-center space-x-2 bg-red-600 hover:bg-red-500 text-slate-50">
           <span>Emergency</span>
           {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         </Button>

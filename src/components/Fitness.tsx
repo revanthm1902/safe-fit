@@ -1,13 +1,17 @@
-
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, AnimationProps } from 'recharts';
-import { Footprints, Flame, Moon, Droplet, Target, TrendingUp, Play, Plus, Clock, AlarmClock } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
+import { Footprints, Flame, Moon, Droplet, Target, TrendingUp, Play, Plus, Clock, AlarmClock, ArrowLeft, Timer, Bell, Waves } from 'lucide-react';
+import WorkoutMode from './fitness/WorkoutMode';
+import WaterLogger from './fitness/WaterLogger';
+import SleepMode from './fitness/SleepMode';
+import MedicineReminder from './fitness/MedicineReminder';
 
 const Fitness = () => {
   const [selectedAction, setSelectedAction] = useState<string | null>(null);
+  const [activeMode, setActiveMode] = useState<string | null>(null);
 
   const stepsData = [{
     name: 'Completed',
@@ -86,7 +90,7 @@ const Fitness = () => {
       icon: Play,
       action: () => {
         setSelectedAction("workout");
-        alert("Workout started! Timer: 00:00");
+        setActiveMode("workout");
       }
     },
     {
@@ -95,7 +99,7 @@ const Fitness = () => {
       icon: Plus,
       action: () => {
         setSelectedAction("water");
-        alert("Water logged! 7/8 glasses today");
+        setActiveMode("water");
       }
     },
     {
@@ -104,7 +108,7 @@ const Fitness = () => {
       icon: Moon,
       action: () => {
         setSelectedAction("sleep");
-        alert("Sleep mode activated. Good night!");
+        setActiveMode("sleep");
       }
     },
     {
@@ -113,7 +117,7 @@ const Fitness = () => {
       icon: AlarmClock,
       action: () => {
         setSelectedAction("reminder");
-        alert("Reminder set for 30 minutes from now");
+        setActiveMode("reminder");
       }
     }
   ];
@@ -129,6 +133,29 @@ const Fitness = () => {
     }
     return null;
   };
+
+  const renderActiveMode = () => {
+    switch (activeMode) {
+      case 'workout':
+        return <WorkoutMode onBack={() => setActiveMode(null)} />;
+      case 'water':
+        return <WaterLogger onBack={() => setActiveMode(null)} />;
+      case 'sleep':
+        return <SleepMode onBack={() => setActiveMode(null)} />;
+      case 'reminder':
+        return <MedicineReminder onBack={() => setActiveMode(null)} />;
+      default:
+        return null;
+    }
+  };
+
+  if (activeMode) {
+    return (
+      <div className="p-4 pt-12 bg-slate-800 min-h-screen">
+        {renderActiveMode()}
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 pt-12 bg-slate-800">

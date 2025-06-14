@@ -55,15 +55,15 @@ const LiveLocationMap: React.FC<LiveLocationMapProps> = ({ userLocation }) => {
   return (
     <div className="space-y-4">
       {/* Map Controls */}
-      <div className="flex justify-between items-center">
-        <div className="flex space-x-2">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0">
+        <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
           <Button
             onClick={isTracking ? stopLocationTracking : startLocationTracking}
             className={`${
               isTracking 
                 ? 'bg-red-500 hover:bg-red-600' 
                 : 'bg-safefit-highlight hover:bg-safefit-highlight/90'
-            } text-white`}
+            } text-white text-sm`}
             size="sm"
           >
             <Navigation className="h-4 w-4 mr-2" />
@@ -73,16 +73,19 @@ const LiveLocationMap: React.FC<LiveLocationMapProps> = ({ userLocation }) => {
             onClick={() => setMapView(mapView === 'map' ? 'satellite' : 'map')}
             variant="outline"
             size="sm"
+            className="text-sm"
           >
             <Satellite className="h-4 w-4 mr-2" />
             {mapView === 'map' ? 'Satellite' : 'Map'}
           </Button>
         </div>
         {userLocation && (
-          <div className="text-sm text-gray-600">
-            <span className="flex items-center">
-              <MapPin className="h-4 w-4 mr-1" />
-              {userLocation.lat.toFixed(4)}, {userLocation.lng.toFixed(4)}
+          <div className="text-xs sm:text-sm text-gray-600 bg-gray-50 rounded-lg px-3 py-2">
+            <span className="flex items-center flex-wrap">
+              <MapPin className="h-3 w-3 sm:h-4 sm:w-4 mr-1 flex-shrink-0" />
+              <span className="break-all">
+                {userLocation.lat.toFixed(4)}, {userLocation.lng.toFixed(4)}
+              </span>
             </span>
           </div>
         )}
@@ -91,7 +94,7 @@ const LiveLocationMap: React.FC<LiveLocationMapProps> = ({ userLocation }) => {
       {/* Map Display */}
       <Card className="relative overflow-hidden">
         <div 
-          className={`h-64 flex items-center justify-center relative ${
+          className={`h-48 sm:h-64 flex items-center justify-center relative ${
             mapView === 'satellite' 
               ? 'bg-gradient-to-br from-green-800 via-green-600 to-blue-600' 
               : 'bg-gradient-to-br from-gray-100 via-gray-200 to-gray-300'
@@ -128,15 +131,15 @@ const LiveLocationMap: React.FC<LiveLocationMapProps> = ({ userLocation }) => {
           )}
 
           {/* Location Info Overlay */}
-          <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg p-3 shadow-md">
+          <div className="absolute top-2 sm:top-4 left-2 sm:left-4 bg-white/90 backdrop-blur-sm rounded-lg p-2 sm:p-3 shadow-md max-w-[calc(100%-1rem)] sm:max-w-none">
             <div className="flex items-center space-x-2">
-              <Crosshair className="h-4 w-4 text-safefit-highlight" />
-              <span className="text-sm font-medium text-safefit-dark">
+              <Crosshair className="h-3 w-3 sm:h-4 sm:w-4 text-safefit-highlight flex-shrink-0" />
+              <span className="text-xs sm:text-sm font-medium text-safefit-dark">
                 {isTracking ? 'Live Tracking Active' : 'Location Services'}
               </span>
             </div>
             {userLocation ? (
-              <div className="text-xs text-gray-600 mt-1">
+              <div className="text-xs text-gray-600 mt-1 break-all">
                 Coordinates: {userLocation.lat.toFixed(6)}, {userLocation.lng.toFixed(6)}
               </div>
             ) : (
@@ -148,22 +151,23 @@ const LiveLocationMap: React.FC<LiveLocationMapProps> = ({ userLocation }) => {
 
           {/* Tracking Status */}
           {isTracking && (
-            <div className="absolute bottom-4 right-4 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-medium flex items-center animate-pulse">
+            <div className="absolute bottom-2 sm:bottom-4 right-2 sm:right-4 bg-red-500 text-white px-2 sm:px-3 py-1 rounded-full text-xs font-medium flex items-center animate-pulse">
               <div className="w-2 h-2 bg-white rounded-full mr-2 animate-ping" />
-              Broadcasting Location
+              <span className="hidden sm:inline">Broadcasting Location</span>
+              <span className="sm:hidden">Live</span>
             </div>
           )}
 
           {/* No Location Message */}
           {!userLocation && (
-            <div className="text-center">
-              <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-              <p className="text-gray-600 text-sm">Enable location access to view map</p>
+            <div className="text-center p-4">
+              <MapPin className="h-8 w-8 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-2" />
+              <p className="text-gray-600 text-sm sm:text-base">Enable location access to view map</p>
               <Button 
                 onClick={() => window.location.reload()} 
                 variant="outline" 
                 size="sm" 
-                className="mt-2"
+                className="mt-2 text-xs sm:text-sm"
               >
                 Refresh Location
               </Button>
@@ -173,12 +177,12 @@ const LiveLocationMap: React.FC<LiveLocationMapProps> = ({ userLocation }) => {
       </Card>
 
       {/* Location Sharing Status */}
-      <Card className="p-4 bg-blue-50 border-blue-200">
+      <Card className="p-3 sm:p-4 bg-blue-50 border-blue-200">
         <div className="flex items-start space-x-3">
-          <div className="bg-blue-100 p-2 rounded-full">
+          <div className="bg-blue-100 p-2 rounded-full flex-shrink-0">
             <MapPin className="h-4 w-4 text-blue-600" />
           </div>
-          <div>
+          <div className="min-w-0 flex-1">
             <h4 className="font-medium text-blue-900 text-sm">Location Sharing</h4>
             <p className="text-xs text-blue-700 mt-1">
               {isTracking 

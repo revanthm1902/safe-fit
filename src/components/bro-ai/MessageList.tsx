@@ -7,6 +7,7 @@ interface Message {
   isUser: boolean;
   timestamp: Date;
   emotion?: string;
+  image?: string;
 }
 
 interface MessageListProps {
@@ -22,8 +23,8 @@ const MessageList: React.FC<MessageListProps> = ({ messages, loading }) => {
   }, [messages]);
 
   return (
-    <div className="flex-1 overflow-y-auto px-6 pb-4">
-      <div className="space-y-4">
+    <div className="flex-1 overflow-y-auto px-4 py-4">
+      <div className="space-y-4 max-w-4xl mx-auto">
         {messages.map((message, index) => (
           <motion.div
             key={index}
@@ -35,22 +36,32 @@ const MessageList: React.FC<MessageListProps> = ({ messages, loading }) => {
             <div
               className={`max-w-[85%] rounded-2xl px-4 py-3 shadow-md ${
                 message.isUser
-                  ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-tr-none'
-                  : 'bg-white text-gray-800 rounded-tl-none border border-gray-100'
+                  ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-tr-md'
+                  : 'bg-white text-gray-800 rounded-tl-md border border-gray-100'
               }`}
             >
               <div className="flex items-start space-x-2">
                 {!message.isUser && (
-                  <span className="text-lg mt-0.5">🤖</span>
+                  <span className="text-lg mt-0.5 flex-shrink-0">🤖</span>
                 )}
-                <div className="flex-1">
-                  <p className="leading-relaxed">{message.text}</p>
-                  <p className={`text-xs ${message.isUser ? 'text-white/70' : 'text-gray-500'} mt-2 flex items-center justify-between`}>
+                <div className="flex-1 min-w-0">
+                  {message.image && (
+                    <div className="mb-2">
+                      <img 
+                        src={message.image} 
+                        alt="Shared" 
+                        className="max-w-full h-auto rounded-lg border border-gray-200"
+                        style={{ maxHeight: '200px', objectFit: 'cover' }}
+                      />
+                    </div>
+                  )}
+                  <p className="leading-relaxed break-words">{message.text}</p>
+                  <div className={`text-xs ${message.isUser ? 'text-white/70' : 'text-gray-500'} mt-2 flex items-center justify-between`}>
                     <span>{message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                     {message.emotion && !message.isUser && (
-                      <span className="ml-2 opacity-70">Detected: {message.emotion}</span>
+                      <span className="ml-2 opacity-70 capitalize">😊 {message.emotion}</span>
                     )}
-                  </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -63,7 +74,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, loading }) => {
             animate={{ opacity: 1 }}
             className="flex justify-start"
           >
-            <div className="bg-white text-gray-800 rounded-2xl rounded-tl-none px-4 py-3 shadow-md border border-gray-100">
+            <div className="bg-white text-gray-800 rounded-2xl rounded-tl-md px-4 py-3 shadow-md border border-gray-100">
               <div className="flex items-center space-x-2">
                 <span className="text-lg">🤖</span>
                 <div className="flex space-x-1">

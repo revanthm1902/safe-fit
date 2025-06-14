@@ -92,7 +92,7 @@ const Safety = () => {
         <p className="text-gray-600">Your protection is our priority</p>
       </motion.div>
 
-      {/* SOS Emergency Button */}
+      {/* SOS Emergency Button with Enhanced Animation */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -100,36 +100,74 @@ const Safety = () => {
         className="mb-6 flex justify-center"
       >
         <div className="relative">
-          <Button 
-            className={`w-32 h-32 rounded-full text-white text-xl font-bold shadow-lg transition-all duration-300 ${
-              sosActive 
-                ? 'bg-red-600 animate-pulse scale-110' 
-                : 'bg-red-500 hover:bg-red-600 hover:scale-105'
-            }`}
-            onClick={handleSOSActivation}
-            disabled={sosActive}
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            animate={sosActive ? { 
+              scale: [1, 1.1, 1, 1.1, 1],
+              boxShadow: [
+                "0 0 0 0 rgba(239, 68, 68, 0.7)",
+                "0 0 0 10px rgba(239, 68, 68, 0)",
+                "0 0 0 0 rgba(239, 68, 68, 0.7)",
+                "0 0 0 10px rgba(239, 68, 68, 0)",
+                "0 0 0 0 rgba(239, 68, 68, 0.7)"
+              ]
+            } : {}}
+            transition={{ 
+              duration: sosActive ? 0.8 : 0.2,
+              repeat: sosActive ? Infinity : 0,
+              ease: "easeInOut"
+            }}
           >
-            {sosActive ? (
-              <div className="flex flex-col items-center">
-                <span className="text-3xl font-bold">{sosCountdown}</span>
-                <span className="text-sm">Sending...</span>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center">
-                <AlertCircle className="h-8 w-8 mb-1" />
-                <span>SOS</span>
-              </div>
-            )}
-          </Button>
+            <Button 
+              className={`w-32 h-32 rounded-full text-white text-xl font-bold shadow-lg transition-all duration-300 ${
+                sosActive 
+                  ? 'bg-red-600 shadow-red-500/50' 
+                  : 'bg-red-500 hover:bg-red-600 hover:shadow-red-500/30'
+              }`}
+              onClick={handleSOSActivation}
+              disabled={sosActive}
+            >
+              {sosActive ? (
+                <motion.div 
+                  className="flex flex-col items-center"
+                  initial={{ scale: 0.8 }}
+                  animate={{ scale: 1 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <motion.span 
+                    className="text-4xl font-bold"
+                    key={sosCountdown}
+                    initial={{ scale: 1.5, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    {sosCountdown}
+                  </motion.span>
+                  <span className="text-sm">Sending...</span>
+                </motion.div>
+              ) : (
+                <div className="flex flex-col items-center">
+                  <AlertCircle className="h-8 w-8 mb-1" />
+                  <span>SOS</span>
+                </div>
+              )}
+            </Button>
+          </motion.div>
+          
           {sosActive && (
             <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 text-center"
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 text-center bg-white rounded-lg shadow-lg p-3 border-2 border-red-200"
             >
-              <p className="text-sm text-red-600 font-medium">
-                Location sent to emergency contacts
-              </p>
+              <motion.p 
+                className="text-sm text-red-600 font-medium"
+                animate={{ opacity: [0.5, 1, 0.5] }}
+                transition={{ duration: 1, repeat: Infinity }}
+              >
+                📍 Location sent to emergency contacts
+              </motion.p>
             </motion.div>
           )}
         </div>

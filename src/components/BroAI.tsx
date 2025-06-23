@@ -3,13 +3,14 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Volume2, VolumeX, Sparkles, Camera, Send, Mic, MicOff, Image, X } from 'lucide-react';
+import { Volume2, VolumeX, Sparkles, Camera, Send, Mic, MicOff, Image, X, Music, Video } from 'lucide-react';
 import * as faceapi from 'face-api.js';
 import { Input } from '@/components/ui/input';
 import EmotionDisplay from './bro-ai/EmotionDisplay';
 import MessageList from './bro-ai/MessageList';
 import { getEmotionAwareResponse, getResponseForInput, handleEmotionChange } from './bro-ai/ResponseEngine';
 import { createSpeechEngine } from './bro-ai/SpeechEngine';
+import { generateResponse, generateWellnessResponse, generateImageResponse, generateAudioResponse, generateVideoResponse } from '@/lib/gemini';
 
 interface Message {
   text: string;
@@ -37,7 +38,7 @@ const BroAI = () => {
   useEffect(() => {
     setMessages([
       {
-        text: "Hey there! 👋 I'm BroAI, your personal wellness companion! I'm here to help you with health, fitness, and wellness questions. You can chat with me, use voice commands, or even send photos for analysis!",
+        text: "Hey there! 👋 I'm BroAI, your AI-powered wellness companion! I'm connected to Google's Gemini AI to give you personalized health, fitness, and wellness advice. Ask me anything about nutrition, workouts, mental health, or just chat about your wellness journey! 💪✨",
         isUser: false,
         timestamp: new Date()
       }
@@ -152,8 +153,7 @@ const BroAI = () => {
       speakText("I couldn't access your camera. Please check your permissions!");
     }
   };
-
-  const sendImageWithMessage = () => {
+  const sendImageWithMessage = async () => {
     if (capturedImage) {
       const userMessage = {
         text: input || "Please analyze this image",
@@ -163,13 +163,19 @@ const BroAI = () => {
       };
       
       setMessages(prev => [...prev, userMessage]);
+      const currentInput = input || "Please analyze this wellness-related image";
       setInput('');
       setCapturedImage(null);
       setShowImagePreview(false);
       setLoading(true);
       
-      setTimeout(() => {
-        const response = "I can see your image! As an AI wellness companion, I can provide general observations about wellness-related photos. For specific medical advice, please consult healthcare professionals.";
+      try {
+        // Use Gemini for real image analysis
+        const response = await generateImageResponse(
+          currentInput, 
+          capturedImage,
+          emotion || undefined
+        );
         
         const aiMessage = {
           text: response,
@@ -178,9 +184,24 @@ const BroAI = () => {
         };
         
         setMessages(prev => [...prev, aiMessage]);
-        speakText(response);
+        // Remove automatic speech - user will click button to hear message
+      } catch (error) {
+        console.error('Error generating image response:', error);
+        
+        // Fallback response
+        const fallbackResponse = "I can see your image! As an AI wellness companion, I can provide general observations about wellness-related photos. For specific medical advice, please consult healthcare professionals.";
+        
+        const aiMessage = {
+          text: fallbackResponse,
+          isUser: false,
+          timestamp: new Date()
+        };
+        
+        setMessages(prev => [...prev, aiMessage]);
+        // Remove automatic speech - user will click button to hear message
+      } finally {
         setLoading(false);
-      }, 1500);
+      }
     }
   };
 
@@ -199,15 +220,13 @@ const BroAI = () => {
     };
     
     setMessages(prev => [...prev, userMessage]);
+    const currentInput = input;
     setInput('');
     setLoading(true);
     
-    setTimeout(() => {
-      let response = getResponseForInput(input);
-      
-      if (emotion) {
-        response = getEmotionAwareResponse(input, emotion);
-      }
+    try {
+      // Use Gemini API to generate response
+      const response = await generateResponse(currentInput, emotion || undefined);
       
       const aiMessage = {
         text: response,
@@ -217,9 +236,28 @@ const BroAI = () => {
       };
       
       setMessages(prev => [...prev, aiMessage]);
-      speakText(response);
+      // Remove automatic speech - user will click button to hear message
+    } catch (error) {
+      console.error('Error generating response:', error);
+      
+      // Fallback to local responses if API fails
+      let fallbackResponse = getResponseForInput(currentInput);
+      if (emotion) {
+        fallbackResponse = getEmotionAwareResponse(currentInput, emotion);
+      }
+      
+      const aiMessage = {
+        text: fallbackResponse,
+        isUser: false,
+        timestamp: new Date(),
+        emotion: emotion || undefined
+      };
+      
+      setMessages(prev => [...prev, aiMessage]);
+      // Remove automatic speech - user will click button to hear message
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -275,7 +313,12 @@ const BroAI = () => {
       
       {/* Messages */}
       <div className="flex-1 overflow-hidden">
-        <MessageList messages={messages} loading={loading} />
+        <MessageList 
+          messages={messages} 
+          loading={loading} 
+          onSpeakMessage={speakText}
+          soundEnabled={soundEnabled}
+        />
       </div>
       
       {/* Image Preview Modal */}
@@ -406,9 +449,138 @@ const BroAI = () => {
             onClick={() => document.getElementById('image-upload')?.click()}
             variant="outline"
             size="sm"
-            className="flex-1 max-w-24 rounded-full bg-green-100 border-green-300"
+            className="flex-1 max-w-18 rounded-full bg-green-100 border-green-300"
           >
             <Image className="h-4 w-4 text-green-600" />
+          </Button>
+
+          {/* Audio Upload */}
+          <input
+            type="file"
+            accept="audio/*"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                const reader = new FileReader();
+                reader.onload = async (event) => {
+                  const audioData = event.target?.result as string;
+                  const userMessage = {
+                    text: `Shared audio file: ${file.name}`,
+                    isUser: true,
+                    timestamp: new Date()
+                  };
+                  
+                  setMessages(prev => [...prev, userMessage]);
+                  setLoading(true);
+                  
+                  try {
+                    const response = await generateAudioResponse(
+                      "Please analyze this audio file for wellness insights",
+                      audioData,
+                      file.type,
+                      emotion || undefined
+                    );
+                    
+                    const aiMessage = {
+                      text: response,
+                      isUser: false,
+                      timestamp: new Date()
+                    };
+                    
+                    setMessages(prev => [...prev, aiMessage]);
+                  } catch (error) {
+                    console.error('Error analyzing audio:', error);
+                    const aiMessage = {
+                      text: "I had trouble analyzing your audio file. Could you try again or tell me about it instead?",
+                      isUser: false,
+                      timestamp: new Date()
+                    };
+                    setMessages(prev => [...prev, aiMessage]);
+                  } finally {
+                    setLoading(false);
+                  }
+                };
+                reader.readAsDataURL(file);
+              }
+            }}
+            className="hidden"
+            id="audio-upload"
+          />
+          <Button
+            onClick={() => document.getElementById('audio-upload')?.click()}
+            variant="outline"
+            size="sm"
+            className="flex-1 max-w-18 rounded-full bg-yellow-100 border-yellow-300"
+          >
+            <Music className="h-4 w-4 text-yellow-600" />
+          </Button>
+
+          {/* Video Upload */}
+          <input
+            type="file"
+            accept="video/*"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file && file.size <= 20 * 1024 * 1024) { // 20MB limit
+                const reader = new FileReader();
+                reader.onload = async (event) => {
+                  const videoData = event.target?.result as string;
+                  const userMessage = {
+                    text: `Shared video file: ${file.name}`,
+                    isUser: true,
+                    timestamp: new Date()
+                  };
+                  
+                  setMessages(prev => [...prev, userMessage]);
+                  setLoading(true);
+                  
+                  try {
+                    const response = await generateVideoResponse(
+                      "Please analyze this video for wellness, fitness, or health insights",
+                      videoData,
+                      file.type,
+                      emotion || undefined
+                    );
+                    
+                    const aiMessage = {
+                      text: response,
+                      isUser: false,
+                      timestamp: new Date()
+                    };
+                    
+                    setMessages(prev => [...prev, aiMessage]);
+                  } catch (error) {
+                    console.error('Error analyzing video:', error);
+                    const aiMessage = {
+                      text: "I had trouble analyzing your video file. Could you try a smaller file or describe what's in the video?",
+                      isUser: false,
+                      timestamp: new Date()
+                    };
+                    setMessages(prev => [...prev, aiMessage]);
+                  } finally {
+                    setLoading(false);
+                  }
+                };
+                reader.readAsDataURL(file);
+              } else if (file && file.size > 20 * 1024 * 1024) {
+                const aiMessage = {
+                  text: "That video file is too large! Please try a smaller video (under 20MB) or describe what's in it instead.",
+                  isUser: false,
+                  timestamp: new Date()
+                };
+                setMessages(prev => [...prev, aiMessage]);
+              }
+            }}
+            className="hidden"
+            id="video-upload"
+          />
+          <Button
+            onClick={() => document.getElementById('video-upload')?.click()}
+            variant="outline"
+            size="sm"
+            className="flex-1 max-w-18 rounded-full bg-pink-100 border-pink-300"
+          >
+            <Video className="h-4 w-4 text-pink-600" />
           </Button>
         </div>
         

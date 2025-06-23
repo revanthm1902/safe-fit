@@ -1,6 +1,8 @@
 
 import React, { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { Volume2 } from 'lucide-react';
 
 interface Message {
   text: string;
@@ -13,9 +15,11 @@ interface Message {
 interface MessageListProps {
   messages: Message[];
   loading: boolean;
+  onSpeakMessage?: (text: string) => void;
+  soundEnabled?: boolean;
 }
 
-const MessageList: React.FC<MessageListProps> = ({ messages, loading }) => {
+const MessageList: React.FC<MessageListProps> = ({ messages, loading, onSpeakMessage, soundEnabled = true }) => {
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
 
   useEffect(() => {
@@ -58,9 +62,21 @@ const MessageList: React.FC<MessageListProps> = ({ messages, loading }) => {
                   <p className="leading-relaxed break-words">{message.text}</p>
                   <div className={`text-xs ${message.isUser ? 'text-white/70' : 'text-gray-500'} mt-2 flex items-center justify-between`}>
                     <span>{message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                    {message.emotion && !message.isUser && (
-                      <span className="ml-2 opacity-70 capitalize">😊 {message.emotion}</span>
-                    )}
+                    <div className="flex items-center space-x-2">
+                      {message.emotion && !message.isUser && (
+                        <span className="opacity-70 capitalize">😊 {message.emotion}</span>
+                      )}
+                      {!message.isUser && onSpeakMessage && soundEnabled && (
+                        <Button
+                          onClick={() => onSpeakMessage(message.text)}
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 rounded-full opacity-70 hover:opacity-100 transition-opacity"
+                        >
+                          <Volume2 className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

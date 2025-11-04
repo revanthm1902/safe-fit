@@ -4,57 +4,77 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Heart, Droplets, Activity, Shield, TrendingUp, Crown } from 'lucide-react';
 import BrandHeader from './BrandHeader';
+import { useHealthMetrics } from '@/hooks/useHealthMetrics';
+
 const Dashboard = () => {
-  const vitalsData = [{
-    icon: Heart,
-    title: "Heart Rate",
-    value: "72",
-    unit: "BPM",
-    status: "Normal",
-    color: "from-red-500 to-pink-500",
-    trend: "+2%",
-    progress: 85
-  }, {
-    icon: Droplets,
-    title: "SpO2 Level",
-    value: "98",
-    unit: "%",
-    status: "Excellent",
-    color: "from-blue-500 to-indigo-500",
-    trend: "+1%",
-    progress: 98
-  }, {
-    icon: Activity,
-    title: "Steps Today",
-    value: "8,234",
-    unit: "steps",
-    status: "Goal: 10,000",
-    color: "from-green-500 to-teal-500",
-    trend: "+15%",
-    progress: 82
-  }, {
-    icon: Shield,
-    title: "Safety Status",
-    value: "Active",
-    unit: "",
-    status: "All systems OK",
-    color: "from-purple-500 to-indigo-500",
-    trend: "100%",
-    progress: 100
-  }];
-  return <div className="min-h-screen bg-gradient-to-br from-safefit-dark via-safefit-primary/10 to-safefit-dark">
+  const { currentMetrics, loading } = useHealthMetrics();
+  
+  const stepsData = {
+    current: currentMetrics?.steps || 0,
+    goal: 10000,
+    percentage: ((currentMetrics?.steps || 0) / 10000) * 100,
+  };
+
+  // Use real data from Supabase instead of fake data
+  const vitalsData = [
+    {
+      icon: Heart,
+      title: "Heart Rate",
+      value: currentMetrics?.heartRate || 0,
+      unit: "BPM",
+      status: currentMetrics?.heartRate ? (currentMetrics.heartRate < 60 ? "Low" : currentMetrics.heartRate > 100 ? "High" : "Normal") : "No data",
+      color: "from-red-500 to-pink-500",
+      trend: currentMetrics?.heartRate ? "+2%" : "--",
+      progress: currentMetrics?.heartRate ? Math.min((currentMetrics.heartRate / 100) * 100, 100) : 0
+    },
+    {
+      icon: Droplets,
+      title: "SpO2 Level",
+      value: currentMetrics?.spo2 || 0,
+      unit: "%",
+      status: currentMetrics?.spo2 ? (currentMetrics.spo2 >= 95 ? "Excellent" : currentMetrics.spo2 >= 90 ? "Good" : "Low") : "No data",
+      color: "from-blue-500 to-indigo-500",
+      trend: currentMetrics?.spo2 ? "+1%" : "--",
+      progress: currentMetrics?.spo2 || 0
+    },
+    {
+      icon: Activity,
+      title: "Steps Today",
+      value: currentMetrics?.steps ? currentMetrics.steps.toLocaleString() : 0,
+      unit: "steps",
+      status: `Goal: 10,000`,
+      color: "from-green-500 to-teal-500",
+      trend: currentMetrics?.steps ? `${Math.round((currentMetrics.steps / 10000) * 100)}%` : "--",
+      progress: Math.min(((currentMetrics?.steps || 0) / 10000) * 100, 100)
+    },
+    {
+      icon: Shield,
+      title: "Safety Status",
+      value: "Active",
+      unit: "",
+      status: "All systems OK",
+      color: "from-purple-500 to-indigo-500",
+      trend: "100%",
+      progress: 100
+    }
+  ];
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-safefit-dark via-safefit-primary/10 to-safefit-dark">
       <BrandHeader />
       
       <div className="pt-20 pb-24 px-4 bg-gray-50">
-        <motion.div initial={{
-        opacity: 0,
-        y: 20
-      }} animate={{
-        opacity: 1,
-        y: 0
-      }} className="mb-8">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
           <h1 className="text-3xl font-bold text-safefit-highlight mb-2 font-poppins">Hello User!</h1>
           <p className="text-safefit-card font-poppins">Here's your health overview for today</p>
+          {loading && (
+            <p className="text-sm text-gray-500 mt-2">Loading health data...</p>
+          )}
+          {!loading && (!currentMetrics || currentMetrics.heartRate === 0) && (
+            <p className="text-sm text-yellow-600 mt-2">
+              ⚠️ No sensor data available. Connect your device to start tracking.
+            </p>
+          )}
         </motion.div>
 
         {/* Subscription Card */}
@@ -159,6 +179,8 @@ const Dashboard = () => {
           </Card>
         </motion.div>
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default Dashboard;

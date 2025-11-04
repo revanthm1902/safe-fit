@@ -9,7 +9,7 @@ import { useHealthMetrics } from '@/hooks/useHealthMetrics';
 const Health = () => {
   const [selectedMetric, setSelectedMetric] = useState('heartRate');
   const [timeRange, setTimeRange] = useState('7d');
-  const { currentMetrics, historicalData, loading, error, fetchHistoricalData } = useHealthMetrics();
+  const { currentMetrics, historicalData, loading, fetchHistoricalData } = useHealthMetrics();
 
   useEffect(() => {
     const days = timeRange === '7d' ? 7 : timeRange === '15d' ? 15 : 30;

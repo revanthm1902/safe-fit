@@ -1,19 +1,11 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Heart, Droplets, Activity, Shield, TrendingUp, Crown } from 'lucide-react';
+import { Heart, Droplets, Activity, Shield, TrendingUp } from 'lucide-react';
 import BrandHeader from './BrandHeader';
 import { useHealthMetrics } from '@/hooks/useHealthMetrics';
 
 const Dashboard = () => {
   const { currentMetrics, loading } = useHealthMetrics();
-  
-  const stepsData = {
-    current: currentMetrics?.steps || 0,
-    goal: 10000,
-    percentage: ((currentMetrics?.steps || 0) / 10000) * 100,
-  };
 
   // Use real data from Supabase instead of fake data
   const vitalsData = [

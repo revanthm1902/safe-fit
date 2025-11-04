@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { User } from '@supabase/supabase-js';
+
 interface AuthScreenProps {
-  onAuthSuccess: (userData: any) => void;
+  onAuthSuccess: (userData: { user: User; hasProfile: boolean }) => void;
 }
 const AuthScreen = ({
   onAuthSuccess
@@ -60,10 +62,11 @@ const AuthScreen = ({
           });
         }
       }
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Authentication failed';
       toast({
         title: "Authentication failed",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {

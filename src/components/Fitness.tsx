@@ -8,76 +8,84 @@ import WorkoutMode from './fitness/WorkoutMode';
 import WaterLogger from './fitness/WaterLogger';
 import SleepMode from './fitness/SleepMode';
 import MedicineReminder from './fitness/MedicineReminder';
+import { useHealthMetrics } from '@/hooks/useHealthMetrics';
 
 const Fitness = () => {
   const [selectedAction, setSelectedAction] = useState<string | null>(null);
   const [activeMode, setActiveMode] = useState<string | null>(null);
+  const { currentMetrics } = useHealthMetrics();
+
+  // Use real steps from Supabase
+  const currentSteps = currentMetrics?.steps || 0;
+  const goalSteps = 10000;
+  const stepsProgress = Math.min((currentSteps / goalSteps) * 100, 100);
 
   const stepsData = [{
     name: 'Completed',
-    value: 8234,
+    value: currentSteps,
     color: '#06b6d4'
   }, {
     name: 'Remaining',
-    value: 1766,
+    value: Math.max(goalSteps - currentSteps, 0),
     color: '#374151'
   }];
 
+  // Keep weekly data for visualization (placeholder for now)
   const weeklyData = [{
     day: 'Mon',
-    steps: 8500,
-    calories: 320
+    steps: 0,
+    calories: 0
   }, {
     day: 'Tue',
-    steps: 7200,
-    calories: 280
+    steps: 0,
+    calories: 0
   }, {
     day: 'Wed',
-    steps: 9100,
-    calories: 350
+    steps: 0,
+    calories: 0
   }, {
     day: 'Thu',
-    steps: 8800,
-    calories: 340
+    steps: 0,
+    calories: 0
   }, {
     day: 'Fri',
-    steps: 7500,
-    calories: 290
+    steps: 0,
+    calories: 0
   }, {
     day: 'Sat',
-    steps: 10200,
-    calories: 390
+    steps: 0,
+    calories: 0
   }, {
     day: 'Sun',
-    steps: 8234,
-    calories: 315
+    steps: currentSteps,
+    calories: Math.round(currentSteps * 0.04) // Rough estimate: 0.04 cal per step
   }];
 
   const fitnessMetrics = [{
     icon: Footprints,
     title: "Steps",
-    value: "8,234",
+    value: currentSteps.toLocaleString(),
     goal: "10,000",
-    progress: 82,
+    progress: Math.round(stepsProgress),
     color: "from-cyan-500 to-blue-500"
   }, {
     icon: Flame,
     title: "Calories",
-    value: "315",
+    value: Math.round(currentSteps * 0.04).toString(),
     goal: "400",
-    progress: 79,
+    progress: Math.min(Math.round((currentSteps * 0.04 / 400) * 100), 100),
     color: "from-orange-500 to-red-500"
   }, {
     icon: Moon,
     title: "Sleep",
-    value: "7h 23m",
+    value: "--",
     goal: "8h",
-    progress: 92,
+    progress: 0,
     color: "from-indigo-500 to-purple-500"
   }, {
     icon: Droplet,
     title: "Hydration",
-    value: "6/8",
+    value: "0/8",
     goal: "8 glasses",
     progress: 75,
     color: "from-blue-500 to-cyan-500"
@@ -122,7 +130,13 @@ const Fitness = () => {
     }
   ];
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  interface TooltipProps {
+    active?: boolean;
+    payload?: Array<{ value: number }>;
+    label?: string;
+  }
+
+  const CustomTooltip = ({ active, payload, label }: TooltipProps) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">

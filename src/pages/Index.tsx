@@ -1,6 +1,6 @@
-
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { User } from '@supabase/supabase-js';
 import SplashScreen from '../components/SplashScreen';
 import AuthScreen from '../components/AuthScreen';
 import ProfileForm from '../components/ProfileForm';
@@ -9,10 +9,16 @@ import SubscriptionPage from '../components/SubscriptionPage';
 import MainApp from '../components/MainApp';
 import { SubscriptionProvider } from '@/contexts/SubscriptionContext';
 
+interface UserWithProfile extends User {
+  profile?: {
+    full_name?: string;
+    phone?: string;
+  };
+}
+
 const Index = () => {
   const [currentScreen, setCurrentScreen] = useState<'splash' | 'auth' | 'profile' | 'onboarding' | 'subscription' | 'main'>('splash');
-  const [user, setUser] = useState(null);
-  const [hasSubscription, setHasSubscription] = useState(false);
+  const [user, setUser] = useState<UserWithProfile | null>(null);
 
   useEffect(() => {
     // Check for existing session
@@ -31,7 +37,7 @@ const Index = () => {
     checkSession();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
       if (event === 'SIGNED_OUT') {
         setCurrentScreen('auth');
         setUser(null);
@@ -41,7 +47,7 @@ const Index = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleExistingUser = async (authUser: any) => {
+  const handleExistingUser = async (authUser: User) => {
     // Check if user has completed profile
     const { data: profile } = await supabase
       .from('user_profiles')
@@ -59,35 +65,36 @@ const Index = () => {
       const hasSeenOnboarding = localStorage.getItem(`onboarding_${authUser.id}`);
       setUser({ ...authUser, profile });
       
-      // Check if they have an active subscription
-      const userSubscription = localStorage.getItem(`subscription_${authUser.id}`);
-      setHasSubscription(!!userSubscription);
-      
       if (!hasSeenOnboarding) {
         setCurrentScreen('onboarding');
-      } else if (!userSubscription) {
-        setCurrentScreen('subscription');
       } else {
-        setCurrentScreen('main');
+        // Check if they have an active subscription
+        const userSubscription = localStorage.getItem(`subscription_${authUser.id}`);
+        if (!userSubscription) {
+          setCurrentScreen('subscription');
+        } else {
+          setCurrentScreen('main');
+        }
       }
     }
   };
 
-  const handleAuthSuccess = async (userData: any) => {
+  const handleAuthSuccess = async (userData: { user: User; hasProfile: boolean }) => {
     setUser(userData.user);
     
     if (userData.hasProfile) {
       // Check onboarding and subscription status
       const hasSeenOnboarding = localStorage.getItem(`onboarding_${userData.user.id}`);
-      const userSubscription = localStorage.getItem(`subscription_${userData.user.id}`);
-      setHasSubscription(!!userSubscription);
       
       if (!hasSeenOnboarding) {
         setCurrentScreen('onboarding');
-      } else if (!userSubscription) {
-        setCurrentScreen('subscription');
       } else {
-        setCurrentScreen('main');
+        const userSubscription = localStorage.getItem(`subscription_${userData.user.id}`);
+        if (!userSubscription) {
+          setCurrentScreen('subscription');
+        } else {
+          setCurrentScreen('main');
+        }
       }
     } else {
       setCurrentScreen('profile');
@@ -95,6 +102,8 @@ const Index = () => {
   };
 
   const handleProfileComplete = async () => {
+    if (!user) return;
+
     // Refetch user profile
     const { data: profile } = await supabase
       .from('user_profiles')
@@ -102,11 +111,13 @@ const Index = () => {
       .eq('user_id', user.id)
       .single();
 
-    setUser({ ...user, profile });
+    setUser({ ...user, profile } as UserWithProfile);
     setCurrentScreen('onboarding');
   };
 
   const handleOnboardingComplete = () => {
+    if (!user) return;
+
     localStorage.setItem(`onboarding_${user.id}`, 'true');
     
     // Check if they have a subscription
@@ -120,8 +131,9 @@ const Index = () => {
   };
 
   const handleSubscriptionComplete = () => {
+    if (!user) return;
+
     localStorage.setItem(`subscription_${user.id}`, 'true');
-    setHasSubscription(true);
     setCurrentScreen('main');
   };
 

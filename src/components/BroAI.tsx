@@ -1,17 +1,16 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Volume2, VolumeX, Sparkles, Camera, Send, Mic, MicOff, Image, X, Music, Video, Heart, Activity } from 'lucide-react';
-import * as faceapi from 'face-api.js';
+import { Volume2, VolumeX, Sparkles, Camera, Send, Image, X, Heart, Activity, FileText, SwitchCamera, Mic, MicOff } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import EmotionDisplay from './bro-ai/EmotionDisplay';
 import MessageList from './bro-ai/MessageList';
-import { getEmotionAwareResponse, getResponseForInput } from './bro-ai/ResponseEngine';
+import { getResponseForInput, getEmotionAwareResponse } from './bro-ai/ResponseEngine';
 import { createSpeechEngine } from './bro-ai/SpeechEngine';
-import { generateResponse, generateWellnessResponse, generateImageResponse, generateAudioResponse, generateVideoResponse } from '@/lib/gemini';
+import { generateResponse, generateWellnessResponse, generateImageResponse } from '@/lib/gemini';
 import { requestAllPermissions } from '@/lib/permissions';
 import { supabase, type SensorData } from '@/integrations/supabase/client';
+import * as faceapi from 'face-api.js';
 
 interface Message {
   text: string;
@@ -25,38 +24,120 @@ const BroAI = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [cameraActive] = useState(false);
-  const [micActive, setMicActive] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const [emotion] = useState<string | null>(null);
-  const [isListening, setIsListening] = useState(false);
+  const [emotion, setEmotion] = useState<string | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [showImagePreview, setShowImagePreview] = useState(false);
+  const [showCameraDialog, setShowCameraDialog] = useState(false);
+  const [cameraFacingMode, setCameraFacingMode] = useState<'user' | 'environment'>('user');
+  const [micActive, setMicActive] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recognitionRef = useRef<any>(null);
 
   const { speakText } = createSpeechEngine(soundEnabled);
 
-  // Request Capacitor permissions on mount
+  // Load face-api models and request permissions on mount
   useEffect(() => {
     const initializePermissions = async () => {
       try {
-        // Request camera and microphone permissions
         const permissions = await requestAllPermissions();
         console.log('Permissions initialized:', permissions);
         
-        // Store permission status if needed
-        if (permissions.camera && permissions.microphone) {
-          console.log('All permissions granted successfully');
+        if (permissions.camera) {
+          console.log('Camera permissions granted successfully');
         } else {
-          console.log('Some permissions were denied - will request on first use');
+          console.log('Camera permission denied - will request on first use');
         }
       } catch (error) {
         console.error('Permission setup error:', error);
       }
     };
 
-    // Don't block app loading - request permissions in background
+    const loadModels = async () => {
+      try {
+        await Promise.all([
+          faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
+          faceapi.nets.faceExpressionNet.loadFromUri('/models')
+        ]);
+        console.log('Face-api models loaded successfully');
+      } catch (error) {
+        console.error('Error loading face-api models:', error);
+      }
+    };
+
     initializePermissions();
+    loadModels();
   }, []);
+
+  // Emotion detection from video feed
+  useEffect(() => {
+    let emotionInterval: NodeJS.Timeout;
+
+    const detectEmotion = async () => {
+      if (videoRef.current && canvasRef.current) {
+        const detections = await faceapi
+          .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions())
+          .withFaceExpressions();
+
+        if (detections) {
+          const expressions = detections.expressions;
+          const dominantEmotion = Object.entries(expressions).reduce((a, b) => 
+            a[1] > b[1] ? a : b
+          )[0];
+          setEmotion(dominantEmotion);
+        }
+      }
+    };
+
+    if (showCameraDialog && videoRef.current) {
+      emotionInterval = setInterval(detectEmotion, 1000);
+    }
+
+    return () => {
+      if (emotionInterval) {
+        clearInterval(emotionInterval);
+      }
+    };
+  }, [showCameraDialog]);
+
+  // Start camera when dialog opens or facing mode changes
+  useEffect(() => {
+    if (showCameraDialog) {
+      const startCamera = async () => {
+        try {
+          if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => track.stop());
+          }
+
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: cameraFacingMode },
+            audio: false
+          });
+
+          streamRef.current = stream;
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+          }
+        } catch (err) {
+          console.error("Error accessing camera:", err);
+          speakText("I couldn't access your camera. Please check your permissions!");
+        }
+      };
+      
+      startCamera();
+    }
+
+    return () => {
+      if (streamRef.current && !showCameraDialog) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+    };
+  }, [showCameraDialog, cameraFacingMode, speakText]);
 
   useEffect(() => {
     setMessages([
@@ -66,24 +147,6 @@ const BroAI = () => {
         timestamp: new Date()
       }
     ]);
-  }, []);
-
-  useEffect(() => {
-    const loadModels = async () => {
-      try {
-        await Promise.all([
-          faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
-          faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
-          faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
-          faceapi.nets.faceExpressionNet.loadFromUri('/models')
-        ]);
-        console.log("Face models loaded successfully");
-      } catch (error) {
-        console.error("Error loading face models:", error);
-      }
-    };
-    
-    loadModels();
   }, []);
 
   // Quick action handlers - fetches live sensor data and analyzes it
@@ -224,91 +287,88 @@ Please analyze this data and provide:
     }
   };
 
-  const startMicrophone = async () => {
+  // Microphone and speech recognition functions
+  const startMicrophone = () => {
     try {
-      await navigator.mediaDevices.getUserMedia({ audio: true });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       
-      if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
-        const recognition = new SpeechRecognition();
-        
-        recognition.continuous = false;
-        recognition.interimResults = false;
-        recognition.lang = 'en-US';
-        
-        recognition.onstart = () => {
-          setMicActive(true);
-          setIsListening(true);
-          speakText("I'm listening! Go ahead and speak.");
-        };
-        
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        recognition.onresult = (event: any) => {
-          const transcript = event.results[0][0].transcript;
-          setInput(transcript);
-          setMicActive(false);
-          setIsListening(false);
-        };
-        
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        recognition.onerror = (event: any) => {
-          console.error('Speech recognition error:', event.error);
-          setMicActive(false);
-          setIsListening(false);
-        };
-        
-        recognition.onend = () => {
-          setMicActive(false);
-          setIsListening(false);
-        };
-        
-        recognition.start();
-      } else {
-        speakText("Sorry, your browser doesn't support speech recognition!");
+      if (!SpeechRecognitionAPI) {
+        speakText("Sorry, speech recognition is not supported in your browser!");
+        return;
       }
-    } catch (err) {
-      console.error("Error accessing microphone:", err);
+
+      const recognition = new SpeechRecognitionAPI();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US';
+
+      recognition.onstart = () => {
+        setIsListening(true);
+        setMicActive(true);
+        console.log('Voice recognition started');
+      };
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setInput(transcript);
+        console.log('Transcript:', transcript);
+      };
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      recognition.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
+        setIsListening(false);
+        setMicActive(false);
+        speakText("I couldn't hear you clearly. Please try again!");
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+        setMicActive(false);
+        console.log('Voice recognition ended');
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+    } catch (error) {
+      console.error('Error starting microphone:', error);
       speakText("I couldn't access your microphone. Please check your permissions!");
     }
   };
 
   const stopMicrophone = () => {
-    setMicActive(false);
-    setIsListening(false);
-    speakText("Stopped listening.");
-  };
-
-  const capturePhoto = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' },
-        audio: false 
-      });
-      
-      const video = document.createElement('video');
-      video.srcObject = stream;
-      video.play();
-      
-      video.onloadedmetadata = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        
-        const ctx = canvas.getContext('2d');
-        ctx?.drawImage(video, 0, 0);
-        
-        const imageData = canvas.toDataURL('image/jpeg', 0.8);
-        setCapturedImage(imageData);
-        setShowImagePreview(true);
-        
-        stream.getTracks().forEach(track => track.stop());
-      };
-    } catch (err) {
-      console.error("Error accessing camera:", err);
-      speakText("I couldn't access your camera. Please check your permissions!");
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+      setMicActive(false);
     }
   };
+
+  // Capture photo from live camera feed
+  const capturePhotoFromCamera = () => {
+    if (videoRef.current) {
+      const canvas = document.createElement('canvas');
+      canvas.width = videoRef.current.videoWidth;
+      canvas.height = videoRef.current.videoHeight;
+
+      const ctx = canvas.getContext('2d');
+      ctx?.drawImage(videoRef.current, 0, 0);
+
+      const imageData = canvas.toDataURL('image/jpeg', 0.8);
+      setCapturedImage(imageData);
+      setShowImagePreview(true);
+      
+      // Close camera dialog
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+      setShowCameraDialog(false);
+    }
+  };
+
   const sendImageWithMessage = async () => {
     if (capturedImage) {
       const userMessage = {
@@ -396,11 +456,10 @@ Please analyze this data and provide:
     } catch (error) {
       console.error('Error generating response:', error);
       
-      // Fallback to local responses if API fails
-      let fallbackResponse = getResponseForInput(currentInput);
-      if (emotion) {
-        fallbackResponse = getEmotionAwareResponse(currentInput, emotion);
-      }
+      // Fallback to emotion-aware local responses if API fails
+      const fallbackResponse = emotion 
+        ? getEmotionAwareResponse(currentInput, emotion)
+        : getResponseForInput(currentInput);
       
       const aiMessage = {
         text: fallbackResponse,
@@ -425,18 +484,18 @@ Please analyze this data and provide:
             <motion.div 
               className="relative"
               animate={{ 
-                rotate: cameraActive ? [0, 5, -5, 0] : 0,
-                scale: micActive ? [1, 1.1, 1] : 1 
+                rotate: (showCameraDialog || micActive) ? [0, 5, -5, 0] : 0,
+                scale: (showCameraDialog || micActive) ? [1, 1.1, 1] : 1 
               }}
               transition={{ 
                 duration: 2, 
-                repeat: cameraActive || micActive ? Infinity : 0 
+                repeat: (showCameraDialog || micActive) ? Infinity : 0 
               }}
             >
               <div className="w-12 h-12 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg">
                 <Sparkles className="h-6 w-6 text-white" />
               </div>
-              {(cameraActive || micActive) && (
+              {(showCameraDialog || micActive) && (
                 <motion.div 
                   className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full"
                   animate={{ scale: [1, 1.2, 1] }}
@@ -468,13 +527,35 @@ Please analyze this data and provide:
       </div>
       
       {/* Messages */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden relative">
         <MessageList 
           messages={messages} 
           loading={loading} 
           onSpeakMessage={speakText}
           soundEnabled={soundEnabled}
         />
+        
+        {/* Quick Action Buttons - Translucent Floating Overlay (only shown before chat starts) */}
+        {messages.length === 1 && (
+          <div className="absolute bottom-4 left-4 right-4 z-10 flex flex-col gap-2">
+            <Button
+              onClick={() => handleQuickAction('health')}
+              disabled={loading}
+              className="bg-red-500/80 backdrop-blur-md hover:bg-red-600/90 text-white rounded-full py-3 shadow-lg border border-white/20"
+            >
+              <Heart className="h-5 w-5 mr-2" />
+              🩺 Check My Health
+            </Button>
+            <Button
+              onClick={() => handleQuickAction('fitness')}
+              disabled={loading}
+              className="bg-green-500/80 backdrop-blur-md hover:bg-green-600/90 text-white rounded-full py-3 shadow-lg border border-white/20"
+            >
+              <Activity className="h-5 w-5 mr-2" />
+              💪 Check My Fitness
+            </Button>
+          </div>
+        )}
       </div>
       
       {/* Image Preview Modal */}
@@ -534,28 +615,6 @@ Please analyze this data and provide:
       
       {/* Input Area */}
       <div className="bg-white/90 backdrop-blur-lg border-t border-gray-200 p-4">
-        {/* Quick Action Buttons */}
-        <div className="flex gap-2 mb-3">
-          <Button
-            onClick={() => handleQuickAction('health')}
-            disabled={loading}
-            className="flex-1 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white rounded-full py-2"
-            size="sm"
-          >
-            <Heart className="h-4 w-4 mr-2" />
-            Check My Health
-          </Button>
-          <Button
-            onClick={() => handleQuickAction('fitness')}
-            disabled={loading}
-            className="flex-1 bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white rounded-full py-2"
-            size="sm"
-          >
-            <Activity className="h-4 w-4 mr-2" />
-            Check My Fitness
-          </Button>
-        </div>
-
         <div className="flex items-center space-x-2 mb-3">
           <div className="flex-1 relative">
             <Input
@@ -563,49 +622,53 @@ Please analyze this data and provide:
               onChange={(e) => setInput(e.target.value)}
               placeholder={isListening ? "Listening..." : "Ask BroAI anything about wellness..."}
               onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-              disabled={loading || isListening}
-              className="pr-12 rounded-full border-gray-300 focus:border-purple-400 focus:ring-purple-400"
+              disabled={loading}
+              className="pr-12 rounded-full border-gray-300 focus:border-purple-400 focus:ring-purple-400 h-12 text-base"
             />
-            {isListening && (
-              <motion.div 
-                className="absolute right-3 top-1/2 transform -translate-y-1/2"
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{ duration: 1, repeat: Infinity }}
-              >
-                <div className="w-2 h-2 bg-red-500 rounded-full" />
-              </motion.div>
-            )}
           </div>
           
           <Button 
             onClick={handleSendMessage} 
-            disabled={loading || (!input.trim() && !capturedImage) || isListening}
+            disabled={loading || (!input.trim() && !capturedImage)}
             className="w-12 h-12 p-0 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
           >
             <Send className="h-5 w-5" />
           </Button>
         </div>
         
-        {/* Action Buttons */}
-        <div className="flex justify-center space-x-4">
+        {/* Action Buttons - Microphone, Camera, Upload Image, Upload PDF */}
+        <div className="flex justify-center gap-3">
+          {/* Microphone Button */}
           <Button
             onClick={micActive ? stopMicrophone : startMicrophone}
             variant="outline"
             size="sm"
-            className={`flex-1 max-w-24 rounded-full ${micActive ? 'bg-red-100 border-red-300' : 'bg-blue-100 border-blue-300'}`}
+            className={`flex-1 max-w-[110px] h-12 rounded-full ${
+              micActive 
+                ? 'bg-red-100 border-red-300 hover:bg-red-200' 
+                : 'bg-orange-100 border-orange-300 hover:bg-orange-200'
+            }`}
           >
-            {micActive ? <MicOff className="h-4 w-4 text-red-600" /> : <Mic className="h-4 w-4 text-blue-600" />}
+            {micActive ? (
+              <MicOff className="h-5 w-5 text-red-600 mr-2" />
+            ) : (
+              <Mic className="h-5 w-5 text-orange-600 mr-2" />
+            )}
+            <span className="text-sm">{isListening ? 'Listening...' : 'Voice'}</span>
           </Button>
-          
+
+          {/* Camera Button */}
           <Button
-            onClick={capturePhoto}
+            onClick={() => setShowCameraDialog(true)}
             variant="outline"
             size="sm"
-            className="flex-1 max-w-24 rounded-full bg-purple-100 border-purple-300"
+            className="flex-1 max-w-[110px] h-12 rounded-full bg-purple-100 border-purple-300 hover:bg-purple-200"
           >
-            <Camera className="h-4 w-4 text-purple-600" />
+            <Camera className="h-5 w-5 text-purple-600 mr-2" />
+            <span className="text-sm">Camera</span>
           </Button>
           
+          {/* Upload Image */}
           <input
             type="file"
             accept="image/*"
@@ -627,122 +690,28 @@ Please analyze this data and provide:
             onClick={() => document.getElementById('image-upload')?.click()}
             variant="outline"
             size="sm"
-            className="flex-1 max-w-18 rounded-full bg-green-100 border-green-300"
+            className="flex-1 max-w-[110px] h-12 rounded-full bg-green-100 border-green-300 hover:bg-green-200"
           >
-            <Image className="h-4 w-4 text-green-600" />
+            <Image className="h-5 w-5 text-green-600 mr-2" />
+            <span className="text-sm">Image</span>
           </Button>
 
-          {/* Audio Upload */}
+          {/* Upload PDF */}
           <input
             type="file"
-            accept="audio/*"
+            accept="application/pdf"
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) {
-                const reader = new FileReader();
-                reader.onload = async (event) => {
-                  const audioData = event.target?.result as string;
-                  const userMessage = {
-                    text: `Shared audio file: ${file.name}`,
-                    isUser: true,
-                    timestamp: new Date()
-                  };
-                  
-                  setMessages(prev => [...prev, userMessage]);
-                  setLoading(true);
-                  
-                  try {
-                    const response = await generateAudioResponse(
-                      "Please analyze this audio file for wellness insights",
-                      audioData,
-                      file.type,
-                      emotion || undefined
-                    );
-                    
-                    const aiMessage = {
-                      text: response,
-                      isUser: false,
-                      timestamp: new Date()
-                    };
-                    
-                    setMessages(prev => [...prev, aiMessage]);
-                  } catch (error) {
-                    console.error('Error analyzing audio:', error);
-                    const aiMessage = {
-                      text: "I had trouble analyzing your audio file. Could you try again or tell me about it instead?",
-                      isUser: false,
-                      timestamp: new Date()
-                    };
-                    setMessages(prev => [...prev, aiMessage]);
-                  } finally {
-                    setLoading(false);
-                  }
+                const userMessage = {
+                  text: `📄 Uploaded report: ${file.name}`,
+                  isUser: true,
+                  timestamp: new Date()
                 };
-                reader.readAsDataURL(file);
-              }
-            }}
-            className="hidden"
-            id="audio-upload"
-          />
-          <Button
-            onClick={() => document.getElementById('audio-upload')?.click()}
-            variant="outline"
-            size="sm"
-            className="flex-1 max-w-18 rounded-full bg-yellow-100 border-yellow-300"
-          >
-            <Music className="h-4 w-4 text-yellow-600" />
-          </Button>
-
-          {/* Video Upload */}
-          <input
-            type="file"
-            accept="video/*"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file && file.size <= 20 * 1024 * 1024) { // 20MB limit
-                const reader = new FileReader();
-                reader.onload = async (event) => {
-                  const videoData = event.target?.result as string;
-                  const userMessage = {
-                    text: `Shared video file: ${file.name}`,
-                    isUser: true,
-                    timestamp: new Date()
-                  };
-                  
-                  setMessages(prev => [...prev, userMessage]);
-                  setLoading(true);
-                  
-                  try {
-                    const response = await generateVideoResponse(
-                      "Please analyze this video for wellness, fitness, or health insights",
-                      videoData,
-                      file.type,
-                      emotion || undefined
-                    );
-                    
-                    const aiMessage = {
-                      text: response,
-                      isUser: false,
-                      timestamp: new Date()
-                    };
-                    
-                    setMessages(prev => [...prev, aiMessage]);
-                  } catch (error) {
-                    console.error('Error analyzing video:', error);
-                    const aiMessage = {
-                      text: "I had trouble analyzing your video file. Could you try a smaller file or describe what's in the video?",
-                      isUser: false,
-                      timestamp: new Date()
-                    };
-                    setMessages(prev => [...prev, aiMessage]);
-                  } finally {
-                    setLoading(false);
-                  }
-                };
-                reader.readAsDataURL(file);
-              } else if (file && file.size > 20 * 1024 * 1024) {
+                setMessages(prev => [...prev, userMessage]);
+                
                 const aiMessage = {
-                  text: "That video file is too large! Please try a smaller video (under 20MB) or describe what's in it instead.",
+                  text: "I received your PDF report! While I can see the filename, I recommend describing the key findings from your report so I can provide personalized wellness advice. 📋",
                   isUser: false,
                   timestamp: new Date()
                 };
@@ -750,28 +719,83 @@ Please analyze this data and provide:
               }
             }}
             className="hidden"
-            id="video-upload"
+            id="pdf-upload"
           />
           <Button
-            onClick={() => document.getElementById('video-upload')?.click()}
+            onClick={() => document.getElementById('pdf-upload')?.click()}
             variant="outline"
             size="sm"
-            className="flex-1 max-w-18 rounded-full bg-pink-100 border-pink-300"
+            className="flex-1 max-w-[110px] h-12 rounded-full bg-blue-100 border-blue-300 hover:bg-blue-200"
           >
-            <Video className="h-4 w-4 text-pink-600" />
+            <FileText className="h-5 w-5 text-blue-600 mr-2" />
+            <span className="text-sm">PDF</span>
           </Button>
         </div>
-        
-        {isListening && (
-          <motion.p 
-            className="text-center text-sm text-purple-600 mt-2 font-medium"
-            animate={{ opacity: [0.5, 1, 0.5] }}
-            transition={{ duration: 1, repeat: Infinity }}
-          >
-            🎤 Speak now... I'm listening!
-          </motion.p>
-        )}
       </div>
+
+      {/* Camera Dialog with Front/Back Switch */}
+      <AnimatePresence>
+        {showCameraDialog && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black z-50 flex flex-col"
+          >
+            <div className="flex-1 relative">
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                className="w-full h-full object-cover"
+              />
+              
+              {/* Controls Overlay */}
+              <div className="absolute inset-0 flex flex-col justify-between p-4">
+                {/* Top Bar */}
+                <div className="flex justify-between items-center">
+                  <Button
+                    onClick={() => {
+                      if (streamRef.current) {
+                        streamRef.current.getTracks().forEach(track => track.stop());
+                        streamRef.current = null;
+                      }
+                      setShowCameraDialog(false);
+                    }}
+                    variant="ghost"
+                    size="sm"
+                    className="bg-black/50 hover:bg-black/70 text-white rounded-full w-10 h-10 p-0"
+                  >
+                    <X className="h-5 w-5" />
+                  </Button>
+                  
+                  <Button
+                    onClick={() => setCameraFacingMode(prev => prev === 'user' ? 'environment' : 'user')}
+                    variant="ghost"
+                    size="sm"
+                    className="bg-black/50 hover:bg-black/70 text-white rounded-full w-10 h-10 p-0"
+                  >
+                    <SwitchCamera className="h-5 w-5" />
+                  </Button>
+                </div>
+                
+                {/* Bottom Bar - Capture Button */}
+                <div className="flex justify-center pb-8">
+                  <Button
+                    onClick={capturePhotoFromCamera}
+                    className="w-20 h-20 rounded-full bg-white border-4 border-gray-300 hover:bg-gray-100 p-0"
+                  >
+                    <div className="w-16 h-16 rounded-full bg-white" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Hidden canvas for face detection */}
+      <canvas ref={canvasRef} className="hidden" />
     </div>
   );
 };

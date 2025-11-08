@@ -7,6 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -17,7 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { 
   User, Bell, Shield, Download, LogOut, ChevronRight,
-  CreditCard, HelpCircle, Lock, FileText, ArrowLeft
+  CreditCard, HelpCircle, Lock, FileText, ArrowLeft, Ruler, Weight
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -32,6 +33,10 @@ interface UserProfile {
   gender?: string;
   date_of_birth?: string;
   address?: string;
+  height?: number;
+  height_unit?: string;
+  weight?: number;
+  weight_unit?: string;
   parental_code?: string | null;
   updated_at?: string;
 }
@@ -70,7 +75,11 @@ const Settings = ({ user, onBack }: SettingsProps) => {
     phone: '',
     gender: '',
     date_of_birth: '',
-    address: ''
+    address: '',
+    height: '',
+    height_unit: 'cm',
+    weight: '',
+    weight_unit: 'kg'
   });
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -92,7 +101,11 @@ const Settings = ({ user, onBack }: SettingsProps) => {
         phone: userProfile.phone || '',
         gender: userProfile.gender || '',
         date_of_birth: userProfile.date_of_birth ? new Date(userProfile.date_of_birth).toISOString().split('T')[0] : '',
-        address: userProfile.address || ''
+        address: userProfile.address || '',
+        height: userProfile.height?.toString() || '',
+        height_unit: userProfile.height_unit || 'cm',
+        weight: userProfile.weight?.toString() || '',
+        weight_unit: userProfile.weight_unit || 'kg'
       });
     }
   }, [userProfile]);
@@ -220,11 +233,23 @@ const Settings = ({ user, onBack }: SettingsProps) => {
     if (!user?.id) return;
 
     try {
+      // Parse height and weight to numbers
+      const heightValue = formData.height ? parseFloat(formData.height) : null;
+      const weightValue = formData.weight ? parseFloat(formData.weight) : null;
+
       // Update in Supabase
       const { error } = await supabase
         .from('user_profiles')
         .update({
-          ...formData,
+          full_name: formData.full_name,
+          phone: formData.phone,
+          gender: formData.gender,
+          date_of_birth: formData.date_of_birth,
+          address: formData.address,
+          height: heightValue,
+          height_unit: formData.height_unit,
+          weight: weightValue,
+          weight_unit: formData.weight_unit,
           updated_at: new Date().toISOString()
         })
         .eq('user_id', user.id);
@@ -234,13 +259,32 @@ const Settings = ({ user, onBack }: SettingsProps) => {
       // Update userProfile state
       const updatedProfile: UserProfile = {
         ...userProfile,
-        ...formData,
+        full_name: formData.full_name,
+        phone: formData.phone,
+        gender: formData.gender,
+        date_of_birth: formData.date_of_birth,
+        address: formData.address,
+        height: heightValue || undefined,
+        height_unit: formData.height_unit,
+        weight: weightValue || undefined,
+        weight_unit: formData.weight_unit,
         user_id: user.id
       };
       setUserProfile(updatedProfile);
 
       // Update localStorage cache
       localStorage.setItem(`profile_${user.id}`, JSON.stringify(updatedProfile));
+      
+      // Update Capacitor Preferences for mobile
+      try {
+        const { Preferences } = await import('@capacitor/preferences');
+        await Preferences.set({
+          key: `profile_${user.id}`,
+          value: JSON.stringify(updatedProfile)
+        });
+      } catch (prefError) {
+        console.log('Capacitor Preferences not available (web mode):', prefError);
+      }
       
       toast({
         title: "Profile updated",
@@ -500,63 +544,127 @@ const Settings = ({ user, onBack }: SettingsProps) => {
 
       {/* Personal Information Dialog */}
       <Dialog open={isPersonalInfoOpen} onOpenChange={setIsPersonalInfoOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Personal Information</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-lg sm:text-xl">Personal Information</DialogTitle>
+            <DialogDescription className="text-sm">
               Update your personal details below
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-1 gap-4">
+          <div className="space-y-3 py-4">
+            <div className="grid grid-cols-1 gap-3">
               <div className="space-y-2">
-                <Label htmlFor="full-name">Full Name</Label>
+                <Label htmlFor="full-name" className="text-sm">Full Name</Label>
                 <Input
                   id="full-name"
                   value={formData.full_name}
                   onChange={(e) => setFormData({...formData, full_name: e.target.value})}
+                  className="h-10 text-base"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
+                <Label htmlFor="phone" className="text-sm">Phone Number</Label>
                 <Input
                   id="phone"
                   value={formData.phone}
                   onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                  className="h-10 text-base"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="gender">Gender</Label>
+                <Label htmlFor="gender" className="text-sm">Gender</Label>
                 <Input
                   id="gender"
                   value={formData.gender}
                   onChange={(e) => setFormData({...formData, gender: e.target.value})}
+                  className="h-10 text-base"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="date-of-birth">Date of Birth</Label>
+                <Label htmlFor="date-of-birth" className="text-sm">Date of Birth</Label>
                 <Input
                   id="date-of-birth"
                   type="date"
                   value={formData.date_of_birth}
                   onChange={(e) => setFormData({...formData, date_of_birth: e.target.value})}
+                  className="h-10 text-base"
                 />
               </div>
+
+              {/* Height Input */}
               <div className="space-y-2">
-                <Label htmlFor="address">Address</Label>
+                <Label htmlFor="height" className="text-sm flex items-center">
+                  <Ruler className="w-4 h-4 mr-1" />
+                  Height
+                </Label>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="col-span-2">
+                    <Input
+                      id="height"
+                      type="number"
+                      value={formData.height}
+                      onChange={(e) => setFormData({...formData, height: e.target.value})}
+                      placeholder="Height"
+                      className="h-10 text-base"
+                    />
+                  </div>
+                  <Select value={formData.height_unit} onValueChange={(value) => setFormData({...formData, height_unit: value})}>
+                    <SelectTrigger className="h-10">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cm">cm</SelectItem>
+                      <SelectItem value="ft">ft</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Weight Input */}
+              <div className="space-y-2">
+                <Label htmlFor="weight" className="text-sm flex items-center">
+                  <Weight className="w-4 h-4 mr-1" />
+                  Weight
+                </Label>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="col-span-2">
+                    <Input
+                      id="weight"
+                      type="number"
+                      value={formData.weight}
+                      onChange={(e) => setFormData({...formData, weight: e.target.value})}
+                      placeholder="Weight"
+                      className="h-10 text-base"
+                    />
+                  </div>
+                  <Select value={formData.weight_unit} onValueChange={(value) => setFormData({...formData, weight_unit: value})}>
+                    <SelectTrigger className="h-10">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="kg">kg</SelectItem>
+                      <SelectItem value="lbs">lbs</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="address" className="text-sm">Address</Label>
                 <Textarea
                   id="address"
                   value={formData.address}
                   onChange={(e) => setFormData({...formData, address: e.target.value})}
+                  className="min-h-[80px] text-base"
                   rows={3}
                 />
               </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsPersonalInfoOpen(false)}>Cancel</Button>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setIsPersonalInfoOpen(false)} className="h-10">Cancel</Button>
             <Button 
-              className="bg-safefit-highlight hover:bg-safefit-highlight/90"
+              className="bg-safefit-highlight hover:bg-safefit-highlight/90 h-10"
               onClick={handlePersonalInfoSubmit}
             >
               Save Changes

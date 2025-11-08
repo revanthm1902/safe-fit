@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { User, Phone, Calendar, Users, MapPin, Ruler, Weight } from 'lucide-react';
 import ParentalCodeDialog from './ParentalCodeDialog';
+import { Preferences } from '@capacitor/preferences';
 
 interface ProfileFormProps {
   user: SupabaseUser;
@@ -71,7 +72,15 @@ const ProfileForm = ({ user, onComplete }: ProfileFormProps) => {
       const { error } = await supabase
         .from('user_profiles')
         .update({
-          ...formData,
+          full_name: formData.full_name,
+          phone: formData.phone,
+          date_of_birth: formData.date_of_birth,
+          gender: formData.gender,
+          address: formData.address,
+          height: parseFloat(formData.height),
+          height_unit: formData.height_unit,
+          weight: parseFloat(formData.weight),
+          weight_unit: formData.weight_unit,
           parental_code: needsParentalControl ? generatedCode : null,
           updated_at: new Date().toISOString()
         })
@@ -79,15 +88,34 @@ const ProfileForm = ({ user, onComplete }: ProfileFormProps) => {
 
       if (error) throw error;
 
-      // Store profile data in localStorage for quick access
+      // Store profile data in both localStorage (web) and Capacitor Preferences (mobile)
       const profileData = {
-        ...formData,
+        full_name: formData.full_name,
+        phone: formData.phone,
+        date_of_birth: formData.date_of_birth,
+        gender: formData.gender,
+        address: formData.address,
+        height: parseFloat(formData.height),
+        height_unit: formData.height_unit,
+        weight: parseFloat(formData.weight),
+        weight_unit: formData.weight_unit,
         parental_code: needsParentalControl ? generatedCode : null,
         user_id: user.id,
         updated_at: new Date().toISOString()
       };
       
+      // Store in localStorage for web
       localStorage.setItem(`profile_${user.id}`, JSON.stringify(profileData));
+      
+      // Store in Capacitor Preferences for mobile (async storage)
+      try {
+        await Preferences.set({
+          key: `profile_${user.id}`,
+          value: JSON.stringify(profileData)
+        });
+      } catch (prefError) {
+        console.log('Capacitor Preferences not available (web mode):', prefError);
+      }
 
       if (needsParentalControl) {
         // Show parental code dialog

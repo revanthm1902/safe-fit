@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -7,10 +6,11 @@ import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { User as SupabaseUser } from '@supabase/supabase-js';
 import { User, Phone, Calendar, Users, MapPin } from 'lucide-react';
 
 interface ProfileFormProps {
-  user: any;
+  user: SupabaseUser;
   onComplete: () => void;
 }
 
@@ -40,16 +40,24 @@ const ProfileForm = ({ user, onComplete }: ProfileFormProps) => {
 
       if (error) throw error;
 
+      // Store profile data in localStorage for quick access
+      localStorage.setItem(`profile_${user.id}`, JSON.stringify({
+        ...formData,
+        user_id: user.id,
+        updated_at: new Date().toISOString()
+      }));
+
       toast({
         title: "Profile completed!",
         description: "Welcome to SafeFit! Your profile has been saved.",
       });
 
       onComplete();
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save profile';
       toast({
         title: "Error saving profile",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

@@ -48,7 +48,38 @@ const Index = () => {
   }, []);
 
   const handleExistingUser = async (authUser: User) => {
-    // Check if user has completed profile
+    // Check localStorage first for quick access
+    const cachedProfile = localStorage.getItem(`profile_${authUser.id}`);
+    
+    if (cachedProfile) {
+      try {
+        const profile = JSON.parse(cachedProfile);
+        const hasProfile = profile && profile.full_name && profile.phone;
+        
+        if (hasProfile) {
+          // Profile exists, check onboarding
+          const hasSeenOnboarding = localStorage.getItem(`onboarding_${authUser.id}`);
+          setUser({ ...authUser, profile });
+          
+          if (!hasSeenOnboarding) {
+            setCurrentScreen('onboarding');
+          } else {
+            // Check subscription
+            const userSubscription = localStorage.getItem(`subscription_${authUser.id}`);
+            if (!userSubscription) {
+              setCurrentScreen('subscription');
+            } else {
+              setCurrentScreen('main');
+            }
+          }
+          return;
+        }
+      } catch (e) {
+        console.error('Error parsing cached profile:', e);
+      }
+    }
+
+    // Fallback to Supabase check
     const { data: profile } = await supabase
       .from('user_profiles')
       .select('*')
@@ -61,6 +92,9 @@ const Index = () => {
       setUser(authUser);
       setCurrentScreen('profile');
     } else {
+      // Cache the profile
+      localStorage.setItem(`profile_${authUser.id}`, JSON.stringify(profile));
+      
       // Check if they've seen onboarding
       const hasSeenOnboarding = localStorage.getItem(`onboarding_${authUser.id}`);
       setUser({ ...authUser, profile });
@@ -142,7 +176,7 @@ const Index = () => {
       <div className="min-h-screen bg-safefit-white">
         {currentScreen === 'splash' && <SplashScreen />}
         {currentScreen === 'auth' && <AuthScreen onAuthSuccess={handleAuthSuccess} />}
-        {currentScreen === 'profile' && <ProfileForm user={user} onComplete={handleProfileComplete} />}
+        {currentScreen === 'profile' && user && <ProfileForm user={user} onComplete={handleProfileComplete} />}
         {currentScreen === 'onboarding' && <OnboardingScreen onComplete={handleOnboardingComplete} />}
         {currentScreen === 'subscription' && <SubscriptionPage onComplete={handleSubscriptionComplete} />}
         {currentScreen === 'main' && <MainApp user={user} />}

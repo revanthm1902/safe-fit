@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,23 +16,49 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { 
-  User, Bell, Shield, Palette, Download, LogOut, ChevronRight,
+  User, Bell, Shield, Download, LogOut, ChevronRight,
   CreditCard, HelpCircle, Lock, FileText, ArrowLeft
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useSubscription } from '@/contexts/SubscriptionContext';
+import { User as SupabaseUser } from '@supabase/supabase-js';
+
+interface UserProfile {
+  id?: string;
+  user_id: string;
+  full_name?: string;
+  phone?: string;
+  gender?: string;
+  date_of_birth?: string;
+  address?: string;
+  updated_at?: string;
+}
 
 interface SettingsProps {
-  user: any;
+  user: SupabaseUser;
   onBack?: () => void;
+}
+
+interface SettingsItem {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  action?: () => void;
+  toggle?: boolean;
+  onToggle?: (value: boolean) => void;
+  info?: string;
+}
+
+interface SettingsGroup {
+  title: string;
+  items: SettingsItem[];
 }
 
 const Settings = ({ user, onBack }: SettingsProps) => {
   const [notifications, setNotifications] = useState(true);
   const [locationSharing, setLocationSharing] = useState(true);
   const [fallDetection, setFallDetection] = useState(true);
-  const [userProfile, setUserProfile] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isPersonalInfoOpen, setIsPersonalInfoOpen] = useState(false);
   const [isPasswordOpen, setIsPasswordOpen] = useState(false);
   const [isSupportOpen, setIsSupportOpen] = useState(false);
@@ -55,7 +81,7 @@ const Settings = ({ user, onBack }: SettingsProps) => {
   });
   
   const { toast } = useToast();
-  const { isSubscribed, subscriptionTier, subscriptionEndDate } = useSubscription();
+  const { isSubscribed, subscriptionTier } = useSubscription();
 
   useEffect(() => {
     if (userProfile) {
@@ -69,30 +95,44 @@ const Settings = ({ user, onBack }: SettingsProps) => {
     }
   }, [userProfile]);
 
-  useEffect(() => {
-    fetchUserProfile();
-  }, [user]);
-
-  const fetchUserProfile = async () => {
+  const fetchUserProfile = useCallback(async () => {
     if (!user?.id) return;
     
     try {
-      // For demo, we'll create mock data
-      const mockProfile = {
-        id: user.id,
-        full_name: 'Jane Doe',
-        phone: '+91 98765 43210',
-        gender: 'Female',
-        date_of_birth: '1992-08-15',
-        address: '123 Health Street, Wellness City',
-        user_id: user.id
-      };
+      // First, try to get from localStorage
+      const cachedProfile = localStorage.getItem(`profile_${user.id}`);
       
-      setUserProfile(mockProfile);
+      if (cachedProfile) {
+        const profile = JSON.parse(cachedProfile);
+        setUserProfile(profile);
+        return;
+      }
+
+      // Fallback to Supabase
+      const { data: profile, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching profile:', error);
+        return;
+      }
+
+      if (profile) {
+        setUserProfile(profile);
+        // Cache it for future use
+        localStorage.setItem(`profile_${user.id}`, JSON.stringify(profile));
+      }
     } catch (error) {
       console.error('Error fetching profile:', error);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    fetchUserProfile();
+  }, [fetchUserProfile]);
 
   const handleSignOut = async () => {
     try {
@@ -119,11 +159,12 @@ const Settings = ({ user, onBack }: SettingsProps) => {
       // Force page reload to reset app state
       window.location.href = '/';
       
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to sign out';
       console.error('Sign out error:', error);
       toast({
         title: "Error signing out",
-        description: error.message || "Something went wrong",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -163,28 +204,56 @@ const Settings = ({ user, onBack }: SettingsProps) => {
         title: "Data exported successfully",
         description: "Your health data has been downloaded.",
       });
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to export data';
       toast({
         title: "Export failed",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     }
   };
 
-  const handlePersonalInfoSubmit = () => {
-    // Mock update profile
-    setUserProfile({
-      ...userProfile,
-      ...formData
-    });
-    
-    toast({
-      title: "Profile updated",
-      description: "Your personal information has been updated successfully."
-    });
-    
-    setIsPersonalInfoOpen(false);
+  const handlePersonalInfoSubmit = async () => {
+    if (!user?.id) return;
+
+    try {
+      // Update in Supabase
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({
+          ...formData,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      // Update userProfile state
+      const updatedProfile: UserProfile = {
+        ...userProfile,
+        ...formData,
+        user_id: user.id
+      };
+      setUserProfile(updatedProfile);
+
+      // Update localStorage cache
+      localStorage.setItem(`profile_${user.id}`, JSON.stringify(updatedProfile));
+      
+      toast({
+        title: "Profile updated",
+        description: "Your personal information has been updated successfully."
+      });
+      
+      setIsPersonalInfoOpen(false);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update profile';
+      toast({
+        title: "Update failed",
+        description: errorMessage,
+        variant: "destructive"
+      });
+    }
   };
 
   const handlePasswordChange = () => {
@@ -228,7 +297,7 @@ const Settings = ({ user, onBack }: SettingsProps) => {
     setIsSupportOpen(false);
   };
 
-  const settingsGroups = [
+  const settingsGroups: SettingsGroup[] = [
     {
       title: "Profile",
       items: [

@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { User, Phone, Calendar, Users, MapPin } from 'lucide-react';
+import ParentalCodeDialog from './ParentalCodeDialog';
 
 interface ProfileFormProps {
   user: SupabaseUser;
@@ -23,17 +24,51 @@ const ProfileForm = ({ user, onComplete }: ProfileFormProps) => {
     address: ''
   });
   const [loading, setLoading] = useState(false);
+  const [showParentalCode, setShowParentalCode] = useState(false);
+  const [parentalCode, setParentalCode] = useState('');
+  const [userAge, setUserAge] = useState(0);
   const { toast } = useToast();
+
+  const generateParentalCode = (): string => {
+    // Generate 8-digit code
+    return Math.floor(10000000 + Math.random() * 90000000).toString();
+  };
+
+  const calculateAge = (dateOfBirth: string): number => {
+    const today = new Date();
+    const birthDate = new Date(dateOfBirth);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    
+    return age;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
+      const age = calculateAge(formData.date_of_birth);
+      setUserAge(age);
+      
+      // Check if parental control is needed (age < 18 or age > 60)
+      const needsParentalControl = age < 18 || age > 60;
+      let generatedCode = '';
+      
+      if (needsParentalControl) {
+        generatedCode = generateParentalCode();
+        setParentalCode(generatedCode);
+      }
+
       const { error } = await supabase
         .from('user_profiles')
         .update({
           ...formData,
+          parental_code: needsParentalControl ? generatedCode : null,
           updated_at: new Date().toISOString()
         })
         .eq('user_id', user.id);
@@ -41,18 +76,25 @@ const ProfileForm = ({ user, onComplete }: ProfileFormProps) => {
       if (error) throw error;
 
       // Store profile data in localStorage for quick access
-      localStorage.setItem(`profile_${user.id}`, JSON.stringify({
+      const profileData = {
         ...formData,
+        parental_code: needsParentalControl ? generatedCode : null,
         user_id: user.id,
         updated_at: new Date().toISOString()
-      }));
+      };
+      
+      localStorage.setItem(`profile_${user.id}`, JSON.stringify(profileData));
 
-      toast({
-        title: "Profile completed!",
-        description: "Welcome to SafeFit! Your profile has been saved.",
-      });
-
-      onComplete();
+      if (needsParentalControl) {
+        // Show parental code dialog
+        setShowParentalCode(true);
+      } else {
+        toast({
+          title: "Profile completed!",
+          description: "Welcome to SafeFit! Your profile has been saved.",
+        });
+        onComplete();
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to save profile';
       toast({
@@ -199,6 +241,21 @@ const ProfileForm = ({ user, onComplete }: ProfileFormProps) => {
           </form>
         </Card>
       </motion.div>
+
+      {/* Parental Code Dialog */}
+      <ParentalCodeDialog
+        isOpen={showParentalCode}
+        parentalCode={parentalCode}
+        userAge={userAge}
+        onClose={() => {
+          setShowParentalCode(false);
+          toast({
+            title: "Profile completed!",
+            description: "Welcome to SafeFit! Your profile has been saved.",
+          });
+          onComplete();
+        }}
+      />
     </div>
   );
 };

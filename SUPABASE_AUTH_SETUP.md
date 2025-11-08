@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS public.user_profiles (
     gender TEXT CHECK (gender IN ('male', 'female', 'other', 'prefer_not_to_say')),
     address TEXT,
     profile_picture_url TEXT,
+    parental_code TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );

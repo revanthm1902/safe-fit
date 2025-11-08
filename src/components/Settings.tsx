@@ -32,6 +32,7 @@ interface UserProfile {
   gender?: string;
   date_of_birth?: string;
   address?: string;
+  parental_code?: string | null;
   updated_at?: string;
 }
 
@@ -63,6 +64,7 @@ const Settings = ({ user, onBack }: SettingsProps) => {
   const [isPasswordOpen, setIsPasswordOpen] = useState(false);
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [isTermsOpen, setIsTermsOpen] = useState(false);
+  const [isParentalCodeOpen, setIsParentalCodeOpen] = useState(false);
   const [formData, setFormData] = useState({
     full_name: '',
     phone: '',
@@ -311,6 +313,11 @@ const Settings = ({ user, onBack }: SettingsProps) => {
           label: "Change Password", 
           action: () => setIsPasswordOpen(true) 
         },
+        ...(userProfile?.parental_code ? [{
+          icon: Shield,
+          label: "Parental Access Code",
+          action: () => setIsParentalCodeOpen(true)
+        }] : []),
         { 
           icon: Shield, 
           label: "Privacy & Security", 
@@ -705,6 +712,68 @@ const Settings = ({ user, onBack }: SettingsProps) => {
             <Button 
               className="bg-safefit-highlight hover:bg-safefit-highlight/90"
               onClick={() => setIsTermsOpen(false)}
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Parental Access Code Dialog */}
+      <Dialog open={isParentalCodeOpen} onOpenChange={setIsParentalCodeOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center justify-center mb-4">
+              <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                <Shield className="w-8 h-8 text-white" />
+              </div>
+            </div>
+            <DialogTitle className="text-2xl text-center">Parental Access Code</DialogTitle>
+            <DialogDescription className="text-center">
+              Share this code with parent or guardian
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6 py-4">
+            <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-6 rounded-lg border-2 border-purple-200">
+              <p className="text-sm text-gray-600 mb-2 text-center font-medium">
+                Your Parental Access Code
+              </p>
+              <div className="text-4xl font-bold text-center tracking-widest text-purple-600 mb-4">
+                {userProfile?.parental_code || '--------'}
+              </div>
+              <Button
+                onClick={() => {
+                  if (userProfile?.parental_code) {
+                    navigator.clipboard.writeText(userProfile.parental_code);
+                    toast({
+                      title: "Code copied!",
+                      description: "Parental access code copied to clipboard.",
+                    });
+                  }
+                }}
+                variant="outline"
+                className="w-full border-purple-300 hover:bg-purple-100"
+              >
+                Copy Code
+              </Button>
+            </div>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <h4 className="font-semibold text-amber-900 mb-2 flex items-center">
+                <Shield className="w-4 h-4 mr-2" />
+                Important
+              </h4>
+              <ul className="text-sm text-amber-800 space-y-1">
+                <li>• This code is for parental monitoring access</li>
+                <li>• Keep this code secure</li>
+                <li>• Share only with trusted guardians</li>
+              </ul>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              onClick={() => setIsParentalCodeOpen(false)}
+              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
             >
               Close
             </Button>

@@ -1,17 +1,25 @@
-import React from 'react';
 import { motion } from 'framer-motion';
-import { Settings } from 'lucide-react';
+import { Settings, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 interface BrandHeaderProps {
   onSettingsClick?: () => void;
+  onRefresh?: () => void;
 }
 const BrandHeader = ({
-  onSettingsClick
+  onSettingsClick,
+  onRefresh
 }: BrandHeaderProps) => {
   const handleSettingsClick = () => {
     console.log('Settings clicked');
     if (onSettingsClick) {
       onSettingsClick();
+    }
+  };
+
+  const handleRefresh = () => {
+    console.log('Refreshing current tab data...');
+    if (onRefresh) {
+      onRefresh();
     }
   };
   return <div className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-lg border-b border-gray-200 shadow-sm">
@@ -32,8 +40,11 @@ const BrandHeader = ({
           </h1>
         </motion.div>
         
-        <div className="flex-1 flex justify-end">
-          <Button variant="ghost" size="sm" onClick={handleSettingsClick} className="text-safefit-dark hover:bg-gray-100 hover:text-safefit-highlight p-2 rounded-full">
+        <div className="flex-1 flex justify-end gap-2">
+          <Button variant="ghost" size="sm" onClick={handleRefresh} className="text-safefit-dark hover:bg-gray-100 hover:text-safefit-highlight p-2 rounded-full" title="Refresh App">
+            <RefreshCw className="w-6 h-6" />
+          </Button>
+          <Button variant="ghost" size="sm" onClick={handleSettingsClick} className="text-safefit-dark hover:bg-gray-100 hover:text-safefit-highlight p-2 rounded-full" title="Settings">
             <Settings className="w-6 h-6" />
           </Button>
         </div>

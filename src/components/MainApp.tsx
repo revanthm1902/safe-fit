@@ -1,6 +1,7 @@
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
+import type { User } from '@supabase/supabase-js';
 import BrandHeader from './BrandHeader';
 import BottomNavigation from './BottomNavigation';
 import Dashboard from './Dashboard';
@@ -12,17 +13,23 @@ import BroAI from './BroAI';
 import SecurityPasskey from './SecurityPasskey';
 
 interface MainAppProps {
-  user: any;
+  user: User;
 }
 
 const MainApp = ({ user }: MainAppProps) => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showSettings, setShowSettings] = useState(false);
   const [isPasskeyVerified, setIsPasskeyVerified] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const handleSettingsToggle = () => {
     console.log('Settings toggle clicked, current state:', showSettings);
     setShowSettings(!showSettings);
+  };
+
+  const handleRefresh = () => {
+    console.log('Refreshing current tab:', activeTab);
+    setRefreshKey(prev => prev + 1);
   };
 
   const handlePasskeyVerified = () => {
@@ -40,15 +47,15 @@ const MainApp = ({ user }: MainAppProps) => {
 
     switch (activeTab) {
       case 'dashboard':
-        return <Dashboard />;
+        return <Dashboard key={refreshKey} user={user} />;
       case 'health':
-        return <Health />;
+        return <Health key={refreshKey} />;
       case 'fitness':
-        return <Fitness />;
+        return <Fitness key={refreshKey} />;
       case 'safety':
-        return <Safety />;
+        return <Safety key={refreshKey} />;
       case 'bro-ai':
-        return <BroAI />;
+        return <BroAI key={refreshKey} />;
       default:
         return <Dashboard />;
     }
@@ -56,7 +63,7 @@ const MainApp = ({ user }: MainAppProps) => {
 
   return (
     <div className="min-h-screen bg-white pb-20">
-      <BrandHeader onSettingsClick={handleSettingsToggle} />
+      <BrandHeader onSettingsClick={handleSettingsToggle} onRefresh={handleRefresh} />
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}

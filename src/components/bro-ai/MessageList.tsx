@@ -71,9 +71,10 @@ const MessageList: React.FC<MessageListProps> = ({ messages, loading, onSpeakMes
                           onClick={() => onSpeakMessage(message.text)}
                           variant="ghost"
                           size="sm"
-                          className="h-6 w-6 p-0 rounded-full opacity-70 hover:opacity-100 transition-opacity"
+                          className="h-6 w-6 p-0 rounded-full hover:bg-gray-200 transition-all duration-200"
+                          title="Speak this message"
                         >
-                          <Volume2 className="h-3 w-3" />
+                          <Volume2 className="h-3.5 w-3.5 text-blue-600 hover:text-blue-700" />
                         </Button>
                       )}
                     </div>

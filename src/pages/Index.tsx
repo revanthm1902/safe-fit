@@ -179,7 +179,7 @@ const Index = () => {
         {currentScreen === 'profile' && user && <ProfileForm user={user} onComplete={handleProfileComplete} />}
         {currentScreen === 'onboarding' && <OnboardingScreen onComplete={handleOnboardingComplete} />}
         {currentScreen === 'subscription' && <SubscriptionPage onComplete={handleSubscriptionComplete} />}
-        {currentScreen === 'main' && <MainApp user={user} />}
+        {currentScreen === 'main' && user && <MainApp user={user} />}
       </div>
     </SubscriptionProvider>
   );

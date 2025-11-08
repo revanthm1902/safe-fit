@@ -79,7 +79,7 @@ export const resetChatSession = () => {
 export const generateResponse = async (userMessage: string, emotion?: string): Promise<string> => {
   try {
     if (!API_KEY) {
-      return "Hey! I need my API key to chat with you. Please add your Gemini API key to get started! 🤖";
+      return "Hey! I need my API key to chat with you. Please add your LLM API key to get started! 🤖";
     }
 
     // Initialize or get existing chat session
@@ -102,7 +102,7 @@ export const generateResponse = async (userMessage: string, emotion?: string): P
       return text || "Sorry bro, I'm having trouble thinking right now. Can you try asking me again?";
     }
   } catch (error) {
-    console.error('Gemini API error:', error);
+    console.error('LLM API error:', error);
     
     if (error instanceof Error) {
       if (error.message.includes('API_KEY')) {

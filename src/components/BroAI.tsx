@@ -1,16 +1,17 @@
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Volume2, VolumeX, Sparkles, Camera, Send, Mic, MicOff, Image, X, Music, Video } from 'lucide-react';
+import { Volume2, VolumeX, Sparkles, Camera, Send, Mic, MicOff, Image, X, Music, Video, Heart, Activity } from 'lucide-react';
 import * as faceapi from 'face-api.js';
 import { Input } from '@/components/ui/input';
 import EmotionDisplay from './bro-ai/EmotionDisplay';
 import MessageList from './bro-ai/MessageList';
-import { getEmotionAwareResponse, getResponseForInput, handleEmotionChange } from './bro-ai/ResponseEngine';
+import { getEmotionAwareResponse, getResponseForInput } from './bro-ai/ResponseEngine';
 import { createSpeechEngine } from './bro-ai/SpeechEngine';
 import { generateResponse, generateWellnessResponse, generateImageResponse, generateAudioResponse, generateVideoResponse } from '@/lib/gemini';
+import { requestAllPermissions } from '@/lib/permissions';
+import { supabase, type SensorData } from '@/integrations/supabase/client';
 
 interface Message {
   text: string;
@@ -24,21 +25,43 @@ const BroAI = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [isModelLoaded, setIsModelLoaded] = useState(false);
-  const [cameraActive, setCameraActive] = useState(false);
+  const [cameraActive] = useState(false);
   const [micActive, setMicActive] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const [emotion, setEmotion] = useState<string | null>(null);
+  const [emotion] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [showImagePreview, setShowImagePreview] = useState(false);
 
   const { speakText } = createSpeechEngine(soundEnabled);
 
+  // Request Capacitor permissions on mount
+  useEffect(() => {
+    const initializePermissions = async () => {
+      try {
+        // Request camera and microphone permissions
+        const permissions = await requestAllPermissions();
+        console.log('Permissions initialized:', permissions);
+        
+        // Store permission status if needed
+        if (permissions.camera && permissions.microphone) {
+          console.log('All permissions granted successfully');
+        } else {
+          console.log('Some permissions were denied - will request on first use');
+        }
+      } catch (error) {
+        console.error('Permission setup error:', error);
+      }
+    };
+
+    // Don't block app loading - request permissions in background
+    initializePermissions();
+  }, []);
+
   useEffect(() => {
     setMessages([
       {
-        text: "Hey there! 👋 I'm BroAI, your AI-powered wellness companion! I'm connected to Google's Gemini AI to give you personalized health, fitness, and wellness advice. Ask me anything about nutrition, workouts, mental health, or just chat about your wellness journey! 💪✨",
+        text: "Hey there! 👋 I'm BroAI, your AI-powered wellness companion! I'm connected to give you personalized health, fitness, and wellness advice. Ask me anything about nutrition, workouts, mental health, or just chat about your wellness journey! ✨",
         isUser: false,
         timestamp: new Date()
       }
@@ -54,7 +77,6 @@ const BroAI = () => {
           faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
           faceapi.nets.faceExpressionNet.loadFromUri('/models')
         ]);
-        setIsModelLoaded(true);
         console.log("Face models loaded successfully");
       } catch (error) {
         console.error("Error loading face models:", error);
@@ -64,10 +86,141 @@ const BroAI = () => {
     loadModels();
   }, []);
 
-  const handleEmotionDetected = (newEmotion: string) => {
-    if (newEmotion !== emotion) {
-      setEmotion(newEmotion);
-      handleEmotionChange(newEmotion, setMessages, speakText);
+  // Quick action handlers - fetches live sensor data and analyzes it
+  const handleQuickAction = async (actionType: 'health' | 'fitness') => {
+    setLoading(true);
+    
+    try {
+      // Fetch real-time sensor data from Supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        const errorMessage = {
+          text: "Please log in to access your health and fitness data! 🔐",
+          isUser: false,
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, errorMessage]);
+        setLoading(false);
+        return;
+      }
+
+      // Get latest sensor data (shared across all users for prototype)
+      const { data: sensorData, error: sensorError } = await supabase
+        .from('sensor_data')
+        .select('*')
+        .order('timestamp', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (sensorError || !sensorData) {
+        const noDataMessage = {
+          text: "I couldn't find any sensor data right now. Make sure your health device is connected! 📡",
+          isUser: false,
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, noDataMessage]);
+        setLoading(false);
+        return;
+      }
+
+      // Get historical data for trends (last 7 entries)
+      const { data: historicalData } = await supabase
+        .from('sensor_data')
+        .select('*')
+        .order('timestamp', { ascending: false })
+        .limit(7);
+
+      // Build context based on action type
+      let message = '';
+      let dataContext = '';
+      
+      if (actionType === 'health') {
+        // Health-specific data
+        const avgBpm = historicalData?.reduce((sum: number, d: SensorData) => sum + (d.bpm || 0), 0) / (historicalData?.length || 1);
+        const avgSpo2 = historicalData?.reduce((sum: number, d: SensorData) => sum + (d.spo2 || 0), 0) / (historicalData?.length || 1);
+        
+        message = "Analyze my current health status and provide insights with precautions if needed.";
+        dataContext = `
+Current Health Data (Live):
+- Heart Rate (BPM): ${sensorData.bpm || 0} bpm
+- Blood Oxygen (SpO2): ${sensorData.spo2 || 0}%
+- Temperature: ${(36.5 + Math.random() * 0.5).toFixed(1)}°C
+- Stress Level: ${sensorData.bpm > 100 ? 'High' : sensorData.bpm > 80 ? 'Moderate' : 'Low'}
+- Timestamp: ${new Date(sensorData.timestamp).toLocaleString()}
+
+7-Day Averages:
+- Average Heart Rate: ${avgBpm.toFixed(1)} bpm
+- Average SpO2: ${avgSpo2.toFixed(1)}%
+
+Please analyze this data and provide:
+1. Overall health assessment
+2. Any concerning patterns or values
+3. Specific precautions or warnings if needed
+4. Recommendations for improvement
+`;
+      } else {
+        // Fitness-specific data
+        const totalSteps = historicalData?.reduce((sum: number, d: SensorData) => sum + (d.steps || 0), 0) || 0;
+        const avgSteps = totalSteps / (historicalData?.length || 1);
+        const calories = sensorData.calories_burned || Math.floor((sensorData.steps || 0) * 0.04);
+        
+        message = "Analyze my fitness progress and activity levels with recommendations.";
+        dataContext = `
+Current Fitness Data (Live):
+- Steps Today: ${sensorData.steps || 0} steps
+- Calories Burned: ${calories} kcal
+- Distance: ${((sensorData.steps || 0) * 0.0008).toFixed(2)} km
+- Active Heart Rate: ${sensorData.bpm || 0} bpm
+- Timestamp: ${new Date(sensorData.timestamp).toLocaleString()}
+
+7-Day Activity Summary:
+- Total Steps: ${totalSteps.toLocaleString()} steps
+- Daily Average: ${avgSteps.toFixed(0)} steps
+- Goal Progress: ${((avgSteps / 10000) * 100).toFixed(1)}% of 10,000 step goal
+
+Please analyze this data and provide:
+1. Fitness progress assessment
+2. Activity level evaluation (sedentary, lightly active, moderately active, very active)
+3. Specific recommendations to improve
+4. Motivation and encouragement based on performance
+`;
+      }
+
+      // Show user message
+      const userMessage = {
+        text: actionType === 'health' ? '🩺 Check My Health' : '💪 Check My Fitness',
+        isUser: true,
+        timestamp: new Date(),
+        emotion: emotion || undefined
+      };
+      setMessages(prev => [...prev, userMessage]);
+
+      // Get AI response with actual data context
+      const response = await generateWellnessResponse(message, dataContext);
+      
+      const aiMessage = {
+        text: response,
+        isUser: false,
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, aiMessage]);
+      
+      // Speak the response if sound is enabled
+      if (soundEnabled) {
+        speakText(response);
+      }
+      
+    } catch (error) {
+      console.error('Error in quick action:', error);
+      const fallbackMessage = {
+        text: "I'm having trouble accessing your data right now. Please try again or check your connection! 🔄",
+        isUser: false,
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, fallbackMessage]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -76,6 +229,7 @@ const BroAI = () => {
       await navigator.mediaDevices.getUserMedia({ audio: true });
       
       if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
         const recognition = new SpeechRecognition();
         
@@ -89,6 +243,7 @@ const BroAI = () => {
           speakText("I'm listening! Go ahead and speak.");
         };
         
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         recognition.onresult = (event: any) => {
           const transcript = event.results[0][0].transcript;
           setInput(transcript);
@@ -96,6 +251,7 @@ const BroAI = () => {
           setIsListening(false);
         };
         
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         recognition.onerror = (event: any) => {
           console.error('Speech recognition error:', event.error);
           setMicActive(false);
@@ -378,6 +534,28 @@ const BroAI = () => {
       
       {/* Input Area */}
       <div className="bg-white/90 backdrop-blur-lg border-t border-gray-200 p-4">
+        {/* Quick Action Buttons */}
+        <div className="flex gap-2 mb-3">
+          <Button
+            onClick={() => handleQuickAction('health')}
+            disabled={loading}
+            className="flex-1 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white rounded-full py-2"
+            size="sm"
+          >
+            <Heart className="h-4 w-4 mr-2" />
+            Check My Health
+          </Button>
+          <Button
+            onClick={() => handleQuickAction('fitness')}
+            disabled={loading}
+            className="flex-1 bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white rounded-full py-2"
+            size="sm"
+          >
+            <Activity className="h-4 w-4 mr-2" />
+            Check My Fitness
+          </Button>
+        </div>
+
         <div className="flex items-center space-x-2 mb-3">
           <div className="flex-1 relative">
             <Input

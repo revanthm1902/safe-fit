@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { User as SupabaseUser } from '@supabase/supabase-js';
-import { User, Phone, Calendar, Users, MapPin } from 'lucide-react';
+import { User, Phone, Calendar, Users, MapPin, Ruler, Weight } from 'lucide-react';
 import ParentalCodeDialog from './ParentalCodeDialog';
 
 interface ProfileFormProps {
@@ -21,7 +21,11 @@ const ProfileForm = ({ user, onComplete }: ProfileFormProps) => {
     phone: '',
     date_of_birth: '',
     gender: '',
-    address: ''
+    address: '',
+    height: '',
+    height_unit: 'cm',
+    weight: '',
+    weight_unit: 'kg'
   });
   const [loading, setLoading] = useState(false);
   const [showParentalCode, setShowParentalCode] = useState(false);
@@ -218,14 +222,72 @@ const ProfileForm = ({ user, onComplete }: ProfileFormProps) => {
               />
             </motion.div>
 
+            {/* Height Input */}
+            <motion.div
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.6 }}
+              className="grid grid-cols-3 gap-2"
+            >
+              <div className="col-span-2 relative">
+                <Ruler className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Input
+                  type="number"
+                  placeholder="Height"
+                  value={formData.height}
+                  onChange={(e) => handleInputChange('height', e.target.value)}
+                  className="bg-white/10 border-white/30 text-white placeholder-gray-300 pl-10"
+                  required
+                />
+              </div>
+              <Select value={formData.height_unit} onValueChange={(value) => handleInputChange('height_unit', value)}>
+                <SelectTrigger className="bg-white/10 border-white/30 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cm">cm</SelectItem>
+                  <SelectItem value="ft">ft</SelectItem>
+                </SelectContent>
+              </Select>
+            </motion.div>
+
+            {/* Weight Input */}
+            <motion.div
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.7 }}
+              className="grid grid-cols-3 gap-2"
+            >
+              <div className="col-span-2 relative">
+                <Weight className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Input
+                  type="number"
+                  placeholder="Weight"
+                  value={formData.weight}
+                  onChange={(e) => handleInputChange('weight', e.target.value)}
+                  className="bg-white/10 border-white/30 text-white placeholder-gray-300 pl-10"
+                  required
+                />
+              </div>
+              <Select value={formData.weight_unit} onValueChange={(value) => handleInputChange('weight_unit', value)}>
+                <SelectTrigger className="bg-white/10 border-white/30 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="kg">kg</SelectItem>
+                  <SelectItem value="lbs">lbs</SelectItem>
+                </SelectContent>
+              </Select>
+            </motion.div>
+
             <motion.div
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.6 }}
+              transition={{ delay: 0.8 }}
             >
               <Button
                 type="submit"
-                disabled={loading || !formData.full_name || !formData.phone}
+                disabled={loading || !formData.full_name || !formData.phone || !formData.height || !formData.weight}
                 className="w-full bg-gradient-to-r from-teal-500 to-purple-600 hover:from-teal-600 hover:to-purple-700 text-white font-semibold py-3"
               >
                 {loading ? (

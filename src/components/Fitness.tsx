@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
-import { Footprints, Flame, Moon, Droplet, Target, TrendingUp, Play, Plus, Clock, AlarmClock, ArrowLeft, Timer, Bell, Waves } from 'lucide-react';
+import { Footprints, Flame, Moon, Droplet, Target, Play, Plus, AlarmClock } from 'lucide-react';
 import WorkoutMode from './fitness/WorkoutMode';
 import WaterLogger from './fitness/WaterLogger';
 import SleepMode from './fitness/SleepMode';

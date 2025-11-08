@@ -4,16 +4,41 @@ import { Heart, Droplets, Activity, Shield, TrendingUp } from 'lucide-react';
 import BrandHeader from './BrandHeader';
 import { useHealthMetrics } from '@/hooks/useHealthMetrics';
 
-const Dashboard = () => {
+interface DashboardProps {
+  user?: {
+    email?: string;
+    user_metadata?: {
+      name?: string;
+      full_name?: string;
+    };
+  };
+}
+
+const Dashboard = ({ user }: DashboardProps) => {
   const { currentMetrics, loading } = useHealthMetrics();
+
+  // Get user's first name from metadata or email
+  const fullName = user?.user_metadata?.name || 
+                   user?.user_metadata?.full_name || 
+                   (user?.email ? user.email.split('@')[0] : 'User');
+  
+  // Extract first name only
+  const firstName = fullName.split(' ')[0];
+
+  // Check if IoT system is connected (has recent sensor data)
+  const isIoTConnected = !loading && currentMetrics && (
+    currentMetrics.heartRate > 0 || 
+    currentMetrics.spo2 > 0 || 
+    currentMetrics.steps > 0
+  );
 
   // Use real data from Supabase instead of fake data
   const vitalsData = [
     {
       icon: Heart,
       title: "Heart Rate",
-      value: currentMetrics?.heartRate || 0,
-      unit: "BPM",
+      value: currentMetrics?.heartRate || "-",
+      unit: currentMetrics?.heartRate ? "BPM" : "",
       status: currentMetrics?.heartRate ? (currentMetrics.heartRate < 60 ? "Low" : currentMetrics.heartRate > 100 ? "High" : "Normal") : "No data",
       color: "from-red-500 to-pink-500",
       trend: currentMetrics?.heartRate ? "+2%" : "--",
@@ -22,8 +47,8 @@ const Dashboard = () => {
     {
       icon: Droplets,
       title: "SpO2 Level",
-      value: currentMetrics?.spo2 || 0,
-      unit: "%",
+      value: currentMetrics?.spo2 || "-",
+      unit: currentMetrics?.spo2 ? "%" : "",
       status: currentMetrics?.spo2 ? (currentMetrics.spo2 >= 95 ? "Excellent" : currentMetrics.spo2 >= 90 ? "Good" : "Low") : "No data",
       color: "from-blue-500 to-indigo-500",
       trend: currentMetrics?.spo2 ? "+1%" : "--",
@@ -32,8 +57,8 @@ const Dashboard = () => {
     {
       icon: Activity,
       title: "Steps Today",
-      value: currentMetrics?.steps ? currentMetrics.steps.toLocaleString() : 0,
-      unit: "steps",
+      value: currentMetrics?.steps ? currentMetrics.steps.toLocaleString() : "-",
+      unit: currentMetrics?.steps ? "steps" : "",
       status: `Goal: 10,000`,
       color: "from-green-500 to-teal-500",
       trend: currentMetrics?.steps ? `${Math.round((currentMetrics.steps / 10000) * 100)}%` : "--",
@@ -42,12 +67,12 @@ const Dashboard = () => {
     {
       icon: Shield,
       title: "Safety Status",
-      value: "Active",
+      value: isIoTConnected ? "Active" : "Disconnected",
       unit: "",
-      status: "All systems OK",
-      color: "from-purple-500 to-indigo-500",
-      trend: "100%",
-      progress: 100
+      status: isIoTConnected ? "All systems OK" : "IoT device not connected",
+      color: isIoTConnected ? "from-purple-500 to-indigo-500" : "from-orange-500 to-red-500",
+      trend: isIoTConnected ? "100%" : "0%",
+      progress: isIoTConnected ? 100 : 0
     }
   ];
 
@@ -57,7 +82,9 @@ const Dashboard = () => {
       
       <div className="pt-20 pb-24 px-4 bg-gray-50">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-          <h1 className="text-3xl font-bold text-safefit-highlight mb-2 font-poppins">Hello User!</h1>
+          <h1 className="text-3xl font-bold text-safefit-highlight mb-2 font-poppins">
+            Hello {firstName}!
+          </h1>
           <p className="text-safefit-card font-poppins">Here's your health overview for today</p>
           {loading && (
             <p className="text-sm text-gray-500 mt-2">Loading health data...</p>

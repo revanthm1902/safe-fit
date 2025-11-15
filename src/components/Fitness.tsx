@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
-import { Footprints, Flame, Moon, Droplet, Target, Play, Plus, AlarmClock } from 'lucide-react';
+import { Footprints, Flame, Moon, Droplet, Play, Plus, AlarmClock } from 'lucide-react';
 import WorkoutMode from './fitness/WorkoutMode';
 import WaterLogger from './fitness/WaterLogger';
 import SleepMode from './fitness/SleepMode';
@@ -305,46 +305,6 @@ const Fitness = () => {
           </Card>
         </motion.div>
       </div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6 }}
-      >
-        <Card className="p-6 bg-white/10 backdrop-blur-lg border border-white/20">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-bold text-white">Quick Actions</h3>
-            <Target className="w-6 h-6 text-teal-400" />
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {quickActions.map((action, index) => {
-              const Icon = action.icon;
-              return (
-                <motion.div
-                  key={index}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Button
-                    onClick={action.action}
-                    className={`bg-gradient-to-r ${action.color} hover:opacity-90 text-white font-medium h-16 flex flex-col items-center justify-center space-y-1 relative overflow-hidden`}
-                  >
-                    <Icon className="w-5 h-5" />
-                    <span className="text-xs">{action.label}</span>
-                    {selectedAction === action.label.toLowerCase().split(' ')[0] && (
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="absolute inset-0 bg-white/20 rounded-md"
-                      />
-                    )}
-                  </Button>
-                </motion.div>
-              );
-            })}
-          </div>
-        </Card>
-      </motion.div>
     </div>
   );
 };

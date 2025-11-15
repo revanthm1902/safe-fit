@@ -1,8 +1,14 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
-import { Heart, Droplets, Activity, Shield, TrendingUp } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Heart, Droplets, Activity, Shield, TrendingUp, Play, Plus, Moon, AlarmClock, Target } from 'lucide-react';
 import BrandHeader from './BrandHeader';
 import { useHealthMetrics } from '@/hooks/useHealthMetrics';
+import WorkoutMode from './fitness/WorkoutMode';
+import WaterLogger from './fitness/WaterLogger';
+import SleepMode from './fitness/SleepMode';
+import MedicineReminder from './fitness/MedicineReminder';
 
 interface DashboardProps {
   user?: {
@@ -16,6 +22,72 @@ interface DashboardProps {
 
 const Dashboard = ({ user }: DashboardProps) => {
   const { currentMetrics, loading } = useHealthMetrics();
+  const [selectedAction, setSelectedAction] = useState<string | null>(null);
+  const [activeMode, setActiveMode] = useState<string | null>(null);
+
+  const quickActions = [
+    {
+      label: "Start Workout",
+      color: "from-green-500 to-emerald-500",
+      icon: Play,
+      action: () => {
+        setSelectedAction("workout");
+        setActiveMode("workout");
+      }
+    },
+    {
+      label: "Log Water",
+      color: "from-blue-500 to-cyan-500",
+      icon: Plus,
+      action: () => {
+        setSelectedAction("water");
+        setActiveMode("water");
+      }
+    },
+    {
+      label: "Sleep Mode",
+      color: "from-indigo-500 to-purple-500",
+      icon: Moon,
+      action: () => {
+        setSelectedAction("sleep");
+        setActiveMode("sleep");
+      }
+    },
+    {
+      label: "Set Reminder",
+      color: "from-orange-500 to-red-500",
+      icon: AlarmClock,
+      action: () => {
+        setSelectedAction("reminder");
+        setActiveMode("reminder");
+      }
+    }
+  ];
+
+  const renderActiveMode = () => {
+    switch (activeMode) {
+      case 'workout':
+        return <WorkoutMode onBack={() => setActiveMode(null)} />;
+      case 'water':
+        return <WaterLogger onBack={() => setActiveMode(null)} />;
+      case 'sleep':
+        return <SleepMode onBack={() => setActiveMode(null)} />;
+      case 'reminder':
+        return <MedicineReminder onBack={() => setActiveMode(null)} />;
+      default:
+        return null;
+    }
+  };
+
+  if (activeMode) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-safefit-dark via-safefit-primary/10 to-safefit-dark">
+        <div className="pt-20 pb-24 px-4">
+          {renderActiveMode()}
+        </div>
+      </div>
+    );
+  }
 
   // Get user's first name from metadata or email
   const fullName = user?.user_metadata?.name || 
@@ -165,35 +237,48 @@ const Dashboard = ({ user }: DashboardProps) => {
         })}
         </div>
 
-        {/* SafeFit Summary */}
-        <motion.div initial={{
-        opacity: 0,
-        y: 20
-      }} animate={{
-        opacity: 1,
-        y: 0
-      }} transition={{
-        delay: 0.6
-      }}>
+        {/* Quick Actions */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+        >
           <Card className="p-6 bg-safefit-card/20 backdrop-blur-lg border border-safefit-border/30">
-            <h3 className="text-xl font-bold text-safefit-dark mb-4 font-poppins">SafeFit Summary</h3>
-            <div className="space-y-3">
-              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, index) => <div key={day} className="flex items-center justify-between">
-                  <span className="text-safefit-primary w-12 font-poppins">{day}</span>
-                  <div className="flex-1 mx-4">
-                    <div className="w-full bg-safefit-border rounded-full h-2">
-                      <motion.div initial={{
-                    width: 0
-                  }} animate={{
-                    width: `${Math.random() * 100}%`
-                  }} transition={{
-                    delay: index * 0.1 + 0.7,
-                    duration: 0.8
-                  }} className="bg-gradient-to-r from-safefit-primary to-safefit-highlight h-2 rounded-full" />
-                    </div>
-                  </div>
-                  <span className="text-safefit-primary text-sm font-poppins">{Math.floor(Math.random() * 15000)}</span>
-                </div>)}
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-safefit-dark font-poppins">Quick Actions</h3>
+              <Target className="w-6 h-6 text-safefit-highlight" />
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {quickActions.map((action, index) => {
+                const Icon = action.icon;
+                return (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: index * 0.1 + 0.7 }}
+                    whileHover={{ scale: 1.05, y: -2 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Button
+                      onClick={action.action}
+                      className={`w-full h-24 bg-gradient-to-br ${action.color} hover:opacity-90 text-white font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex flex-col items-center justify-center gap-2 relative overflow-hidden border-0`}
+                    >
+                      <div className="absolute inset-0 bg-white/10 opacity-0 hover:opacity-100 transition-opacity duration-200" />
+                      <Icon className="w-7 h-7 relative z-10" />
+                      <span className="text-sm font-semibold relative z-10">{action.label}</span>
+                      {selectedAction === action.label.toLowerCase().split(' ')[0] && (
+                        <motion.div
+                          layoutId="selectedAction"
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="absolute inset-0 bg-white/20 rounded-xl"
+                        />
+                      )}
+                    </Button>
+                  </motion.div>
+                );
+              })}
             </div>
           </Card>
         </motion.div>

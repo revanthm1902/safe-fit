@@ -102,22 +102,22 @@ const MedicineReminder = ({ onBack }: MedicineReminderProps) => {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50">
       <div className="flex items-center mb-6">
         <Button
           onClick={onBack}
           variant="ghost"
-          className="text-white hover:bg-white/10 p-2"
+          className="text-gray-800 hover:bg-white/50 p-2"
         >
           <ArrowLeft className="w-6 h-6" />
         </Button>
-        <h1 className="text-2xl font-bold text-white ml-4">Medicine Reminders</h1>
+        <h1 className="text-2xl font-bold text-gray-800 ml-4">Medicine Reminders</h1>
       </div>
 
       <div className="space-y-6">
         {/* Add New Reminder Button */}
         {!showAddForm && (
-          <Card className="p-6 bg-white/10 backdrop-blur-lg border border-white/20">
+          <Card className="p-6 bg-white/80 backdrop-blur-lg border-0 shadow-xl">
             <Button
               onClick={() => setShowAddForm(true)}
               className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:opacity-90 text-white py-4"
@@ -130,44 +130,44 @@ const MedicineReminder = ({ onBack }: MedicineReminderProps) => {
 
         {/* Add Reminder Form */}
         {showAddForm && (
-          <Card className="p-6 bg-white/10 backdrop-blur-lg border border-white/20">
-            <h3 className="text-xl font-bold text-white mb-4 flex items-center">
+          <Card className="p-6 bg-white/80 backdrop-blur-lg border-0 shadow-xl">
+            <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
               <Pill className="w-6 h-6 mr-2" />
               New Medicine Reminder
             </h3>
             
             <div className="space-y-4">
               <div>
-                <label className="text-gray-300 text-sm">Medicine Name</label>
+                <label className="text-gray-600 text-sm">Medicine Name</label>
                 <input
                   type="text"
                   value={newReminder.medicineName}
                   onChange={(e) => setNewReminder({...newReminder, medicineName: e.target.value})}
-                  className="w-full p-3 bg-white/10 border border-white/20 rounded-lg text-white"
+                  className="w-full p-3 bg-white border border-gray-200 rounded-lg text-gray-800"
                   placeholder="e.g., Aspirin, Vitamin C"
                 />
               </div>
 
               <div>
-                <label className="text-gray-300 text-sm">Dosage</label>
+                <label className="text-gray-600 text-sm">Dosage</label>
                 <input
                   type="text"
                   value={newReminder.dosage}
                   onChange={(e) => setNewReminder({...newReminder, dosage: e.target.value})}
-                  className="w-full p-3 bg-white/10 border border-white/20 rounded-lg text-white"
+                  className="w-full p-3 bg-white border border-gray-200 rounded-lg text-gray-800"
                   placeholder="e.g., 1 tablet, 2 capsules"
                 />
               </div>
 
               <div>
-                <label className="text-gray-300 text-sm">Times</label>
+                <label className="text-gray-600 text-sm">Times</label>
                 {newReminder.times.map((time, index) => (
                   <div key={index} className="flex items-center space-x-2 mb-2">
                     <input
                       type="time"
                       value={time}
                       onChange={(e) => updateTime(index, e.target.value)}
-                      className="flex-1 p-3 bg-white/10 border border-white/20 rounded-lg text-white"
+                      className="flex-1 p-3 bg-white border border-gray-200 rounded-lg text-gray-800"
                     />
                   </div>
                 ))}
@@ -181,7 +181,7 @@ const MedicineReminder = ({ onBack }: MedicineReminderProps) => {
               </div>
 
               <div>
-                <label className="text-gray-300 text-sm mb-2 block">Days of Week</label>
+                <label className="text-gray-600 text-sm mb-2 block">Days of Week</label>
                 <div className="grid grid-cols-7 gap-2">
                   {daysOfWeek.map(day => (
                     <Button
@@ -189,9 +189,9 @@ const MedicineReminder = ({ onBack }: MedicineReminderProps) => {
                       onClick={() => toggleDay(day)}
                       className={`${
                         newReminder.days.includes(day)
-                          ? 'bg-teal-500 text-white'
-                          : 'bg-white/10 text-gray-300'
-                      } hover:bg-teal-600`}
+                          ? 'bg-orange-500 text-white'
+                          : 'bg-gray-100 text-gray-600'
+                      } hover:bg-orange-600 hover:text-white`}
                     >
                       {day}
                     </Button>
@@ -200,12 +200,12 @@ const MedicineReminder = ({ onBack }: MedicineReminderProps) => {
               </div>
 
               <div>
-                <label className="text-gray-300 text-sm">Duration (days)</label>
+                <label className="text-gray-600 text-sm">Duration (days)</label>
                 <input
                   type="number"
                   value={newReminder.duration}
                   onChange={(e) => setNewReminder({...newReminder, duration: parseInt(e.target.value)})}
-                  className="w-full p-3 bg-white/10 border border-white/20 rounded-lg text-white"
+                  className="w-full p-3 bg-white border border-gray-200 rounded-lg text-gray-800"
                   min="1"
                   max="365"
                 />
@@ -230,8 +230,8 @@ const MedicineReminder = ({ onBack }: MedicineReminderProps) => {
         )}
 
         {/* Active Reminders */}
-        <Card className="p-6 bg-white/10 backdrop-blur-lg border border-white/20">
-          <h3 className="text-xl font-bold text-white mb-4 flex items-center">
+        <Card className="p-6 bg-white/80 backdrop-blur-lg border-0 shadow-xl">
+          <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
             <Bell className="w-6 h-6 mr-2" />
             Active Reminders
           </h3>
@@ -239,7 +239,7 @@ const MedicineReminder = ({ onBack }: MedicineReminderProps) => {
           {reminders.length === 0 ? (
             <div className="text-center py-8">
               <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-400">No active reminders</p>
+              <p className="text-gray-500">No active reminders</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -249,12 +249,12 @@ const MedicineReminder = ({ onBack }: MedicineReminderProps) => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className="p-4 bg-white/5 rounded-lg border border-white/10"
+                  className="p-4 bg-amber-50 rounded-lg border border-amber-200"
                 >
                   <div className="flex items-center justify-between mb-3">
                     <div>
-                      <h4 className="text-white font-semibold text-lg">{reminder.medicineName}</h4>
-                      <p className="text-gray-300">{reminder.dosage}</p>
+                      <h4 className="text-gray-800 font-semibold text-lg">{reminder.medicineName}</h4>
+                      <p className="text-gray-600">{reminder.dosage}</p>
                     </div>
                     <Button
                       onClick={() => deleteReminder(reminder.id)}
@@ -265,14 +265,14 @@ const MedicineReminder = ({ onBack }: MedicineReminderProps) => {
                   </div>
                   
                   <div className="flex items-center space-x-4 text-sm">
-                    <div className="flex items-center text-teal-400">
+                    <div className="flex items-center text-orange-600">
                       <Clock className="w-4 h-4 mr-1" />
                       {reminder.times.join(', ')}
                     </div>
-                    <div className="text-gray-400">
+                    <div className="text-gray-600">
                       {reminder.days.length === 7 ? 'Daily' : reminder.days.join(', ')}
                     </div>
-                    <div className="text-gray-400">
+                    <div className="text-gray-600">
                       {reminder.duration} days remaining
                     </div>
                   </div>
@@ -283,9 +283,9 @@ const MedicineReminder = ({ onBack }: MedicineReminderProps) => {
         </Card>
 
         {/* Quick Tips */}
-        <Card className="p-6 bg-white/10 backdrop-blur-lg border border-white/20">
-          <h3 className="text-xl font-bold text-white mb-4">Medicine Tips</h3>
-          <div className="space-y-2 text-gray-300 text-sm">
+        <Card className="p-6 bg-white/80 backdrop-blur-lg border-0 shadow-xl">
+          <h3 className="text-xl font-bold text-gray-800 mb-4">Medicine Tips</h3>
+          <div className="space-y-2 text-gray-700 text-sm">
             <p>• Take medicines with food if recommended by your doctor</p>
             <p>• Set multiple alarms for critical medications</p>
             <p>• Keep a backup supply when traveling</p>

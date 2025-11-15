@@ -59,31 +59,31 @@ const WorkoutMode = ({ onBack }: WorkoutModeProps) => {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50">
       <div className="flex items-center mb-6">
         <Button
           onClick={onBack}
           variant="ghost"
-          className="text-white hover:bg-white/10 p-2"
+          className="text-gray-800 hover:bg-white/50 p-2"
         >
           <ArrowLeft className="w-6 h-6" />
         </Button>
-        <h1 className="text-2xl font-bold text-white ml-4">Workout Mode</h1>
+        <h1 className="text-2xl font-bold text-gray-800 ml-4">Workout Mode</h1>
       </div>
 
       <div className="space-y-6">
         {/* Timer Card */}
-        <Card className="p-8 bg-white/10 backdrop-blur-lg border border-white/20 text-center">
+        <Card className="p-8 bg-white/80 backdrop-blur-lg border-0 shadow-xl text-center">
           <motion.div
             animate={{ scale: isActive ? [1, 1.05, 1] : 1 }}
             transition={{ duration: 1, repeat: isActive ? Infinity : 0 }}
             className="mb-6"
           >
-            <Timer className="w-16 h-16 text-teal-400 mx-auto mb-4" />
-            <div className="text-6xl font-mono text-white mb-2">
+            <Timer className="w-16 h-16 text-emerald-600 mx-auto mb-4" />
+            <div className="text-6xl font-mono text-gray-800 mb-2">
               {formatTime(time)}
             </div>
-            <div className="text-gray-300">Total Workout Time</div>
+            <div className="text-gray-600">Total Workout Time</div>
           </motion.div>
 
           <div className="flex justify-center space-x-4">
@@ -115,18 +115,18 @@ const WorkoutMode = ({ onBack }: WorkoutModeProps) => {
         </Card>
 
         {/* Current Exercise */}
-        <Card className="p-6 bg-white/10 backdrop-blur-lg border border-white/20">
+        <Card className="p-6 bg-white/80 backdrop-blur-lg border-0 shadow-xl">
           <div className="text-center">
             <div className="text-6xl mb-4">{exercises[currentExercise].image}</div>
-            <h3 className="text-2xl font-bold text-white mb-2">
+            <h3 className="text-2xl font-bold text-gray-800 mb-2">
               {exercises[currentExercise].name}
             </h3>
-            <p className="text-gray-300 mb-4">
+            <p className="text-gray-600 mb-4">
               Recommended: {exercises[currentExercise].duration} seconds
             </p>
             <Button
               onClick={nextExercise}
-              className="bg-teal-500 hover:bg-teal-600 text-white"
+              className="bg-emerald-500 hover:bg-emerald-600 text-white"
             >
               Next Exercise
             </Button>
@@ -134,8 +134,8 @@ const WorkoutMode = ({ onBack }: WorkoutModeProps) => {
         </Card>
 
         {/* Exercise List */}
-        <Card className="p-6 bg-white/10 backdrop-blur-lg border border-white/20">
-          <h3 className="text-xl font-bold text-white mb-4 flex items-center">
+        <Card className="p-6 bg-white/80 backdrop-blur-lg border-0 shadow-xl">
+          <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
             <Dumbbell className="w-6 h-6 mr-2" />
             Today's Exercises
           </h3>
@@ -145,8 +145,8 @@ const WorkoutMode = ({ onBack }: WorkoutModeProps) => {
                 key={index}
                 className={`p-4 rounded-lg border transition-all ${
                   index === currentExercise
-                    ? 'bg-teal-500/20 border-teal-400'
-                    : 'bg-white/5 border-white/10'
+                    ? 'bg-emerald-50 border-emerald-400'
+                    : 'bg-gray-50 border-gray-200'
                 }`}
                 whileHover={{ scale: 1.02 }}
               >
@@ -154,12 +154,12 @@ const WorkoutMode = ({ onBack }: WorkoutModeProps) => {
                   <div className="flex items-center">
                     <span className="text-2xl mr-3">{exercise.image}</span>
                     <div>
-                      <div className="text-white font-medium">{exercise.name}</div>
-                      <div className="text-gray-400 text-sm">{exercise.duration}s</div>
+                      <div className="text-gray-800 font-medium">{exercise.name}</div>
+                      <div className="text-gray-600 text-sm">{exercise.duration}s</div>
                     </div>
                   </div>
                   {index === currentExercise && (
-                    <Activity className="w-5 h-5 text-teal-400" />
+                    <Activity className="w-5 h-5 text-emerald-600" />
                   )}
                 </div>
               </motion.div>

@@ -477,10 +477,10 @@ Please analyze this data and provide:
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex flex-col">
-      {/* Header */}
-      <div className="bg-white/90 backdrop-blur-lg border-b border-gray-200 p-4 pt-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
+      {/* Header - Fixed position */}
+      <div className="fixed top-0 left-0 right-0 bg-white/90 backdrop-blur-lg border-b border-gray-200 p-3 sm:p-4 pt-4 sm:pt-6 z-40">
+        <div className="flex items-center justify-between max-w-4xl mx-auto">
+          <div className="flex items-center space-x-2 sm:space-x-3">
             <motion.div 
               className="relative"
               animate={{ 
@@ -492,39 +492,42 @@ Please analyze this data and provide:
                 repeat: (showCameraDialog || micActive) ? Infinity : 0 
               }}
             >
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg">
-                <Sparkles className="h-6 w-6 text-white" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg">
+                <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
               {(showCameraDialog || micActive) && (
                 <motion.div 
-                  className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full"
+                  className="absolute -top-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 bg-green-400 rounded-full"
                   animate={{ scale: [1, 1.2, 1] }}
                   transition={{ duration: 1, repeat: Infinity }}
                 />
               )}
             </motion.div>
             <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+              <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
                 BroAI
               </h1>
-              <p className="text-sm text-gray-600">Wellness Companion</p>
+              <p className="text-xs sm:text-sm text-gray-600">Wellness Companion</p>
             </div>
           </div>
           
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1 sm:space-x-2">
             <EmotionDisplay emotion={emotion} />
             
             <Button
               onClick={() => setSoundEnabled(!soundEnabled)}
               variant="outline"
               size="sm"
-              className="w-10 h-10 p-0 rounded-full"
+              className="w-9 h-9 sm:w-10 sm:h-10 p-0 rounded-full"
             >
               {soundEnabled ? <Volume2 className="h-4 w-4 text-green-600" /> : <VolumeX className="h-4 w-4 text-gray-500" />}
             </Button>
           </div>
         </div>
       </div>
+      
+      {/* Spacer for fixed header */}
+      <div className="h-16 sm:h-20"></div>
       
       {/* Messages */}
       <div className="flex-1 overflow-hidden relative">
@@ -537,21 +540,21 @@ Please analyze this data and provide:
         
         {/* Quick Action Buttons - Translucent Floating Overlay (only shown before chat starts) */}
         {messages.length === 1 && (
-          <div className="absolute bottom-4 left-4 right-4 z-10 flex flex-col gap-2">
+          <div className="absolute bottom-4 left-2 right-2 sm:left-4 sm:right-4 z-10 flex flex-col sm:flex-row gap-2">
             <Button
               onClick={() => handleQuickAction('health')}
               disabled={loading}
-              className="bg-red-500/80 backdrop-blur-md hover:bg-red-600/90 text-white rounded-full py-3 shadow-lg border border-white/20"
+              className="bg-red-500/80 backdrop-blur-md hover:bg-red-600/90 text-white rounded-full py-2.5 sm:py-3 text-sm sm:text-base shadow-lg border border-white/20 flex-1"
             >
-              <Heart className="h-5 w-5 mr-2" />
+              <Heart className="h-4 w-4 sm:h-5 sm:w-5 mr-1.5 sm:mr-2" />
               🩺 Check My Health
             </Button>
             <Button
               onClick={() => handleQuickAction('fitness')}
               disabled={loading}
-              className="bg-green-500/80 backdrop-blur-md hover:bg-green-600/90 text-white rounded-full py-3 shadow-lg border border-white/20"
+              className="bg-green-500/80 backdrop-blur-md hover:bg-green-600/90 text-white rounded-full py-2.5 sm:py-3 text-sm sm:text-base shadow-lg border border-white/20 flex-1"
             >
-              <Activity className="h-5 w-5 mr-2" />
+              <Activity className="h-4 w-4 sm:h-5 sm:w-5 mr-1.5 sm:mr-2" />
               💪 Check My Fitness
             </Button>
           </div>
@@ -613,125 +616,130 @@ Please analyze this data and provide:
         )}
       </AnimatePresence>
       
-      {/* Input Area */}
-      <div className="bg-white/90 backdrop-blur-lg border-t border-gray-200 p-4">
-        <div className="flex items-center space-x-2 mb-3">
-          <div className="flex-1 relative">
-            <Input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder={isListening ? "Listening..." : "Ask BroAI anything about wellness..."}
-              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-              disabled={loading}
-              className="pr-12 rounded-full border-gray-300 focus:border-purple-400 focus:ring-purple-400 h-12 text-base"
-            />
+      {/* Input Area - Fixed above bottom navigation */}
+      <div className="fixed bottom-20 left-0 right-0 bg-white/90 backdrop-blur-lg border-t border-gray-200 p-3 sm:p-4 z-30">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center space-x-2 mb-2 sm:mb-3">
+            <div className="flex-1 relative">
+              <Input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder={isListening ? "Listening..." : "Ask BroAI anything..."}
+                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                disabled={loading}
+                className="pr-12 rounded-full border-gray-300 focus:border-purple-400 focus:ring-purple-400 h-10 sm:h-12 text-sm sm:text-base"
+              />
+            </div>
+            
+            <Button 
+              onClick={handleSendMessage} 
+              disabled={loading || (!input.trim() && !capturedImage)}
+              className="w-10 h-10 sm:w-12 sm:h-12 p-0 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white flex-shrink-0"
+            >
+              <Send className="h-4 w-4 sm:h-5 sm:w-5" />
+            </Button>
           </div>
           
-          <Button 
-            onClick={handleSendMessage} 
-            disabled={loading || (!input.trim() && !capturedImage)}
-            className="w-12 h-12 p-0 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
-          >
-            <Send className="h-5 w-5" />
-          </Button>
-        </div>
-        
-        {/* Action Buttons - Microphone, Camera, Upload Image, Upload PDF */}
-        <div className="flex justify-center gap-3">
-          {/* Microphone Button */}
-          <Button
-            onClick={micActive ? stopMicrophone : startMicrophone}
-            variant="outline"
-            size="sm"
-            className={`flex-1 max-w-[110px] h-12 rounded-full ${
-              micActive 
-                ? 'bg-red-100 border-red-300 hover:bg-red-200' 
-                : 'bg-orange-100 border-orange-300 hover:bg-orange-200'
-            }`}
-          >
-            {micActive ? (
-              <MicOff className="h-5 w-5 text-red-600 mr-2" />
-            ) : (
-              <Mic className="h-5 w-5 text-orange-600 mr-2" />
-            )}
-            <span className="text-sm">{isListening ? 'Listening...' : 'Voice'}</span>
-          </Button>
+          {/* Action Buttons - Icons only */}
+          <div className="flex justify-center gap-2 sm:gap-3">
+            {/* Microphone Button */}
+            <Button
+              onClick={micActive ? stopMicrophone : startMicrophone}
+              variant="outline"
+              size="sm"
+              className={`w-11 h-11 sm:w-12 sm:h-12 p-0 rounded-full ${
+                micActive 
+                  ? 'bg-red-100 border-red-300 hover:bg-red-200' 
+                  : 'bg-orange-100 border-orange-300 hover:bg-orange-200'
+              }`}
+              title={isListening ? 'Stop listening' : 'Voice input'}
+            >
+              {micActive ? (
+                <MicOff className="h-5 w-5 sm:h-6 sm:w-6 text-red-600" />
+              ) : (
+                <Mic className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600" />
+              )}
+            </Button>
 
-          {/* Camera Button */}
-          <Button
-            onClick={() => setShowCameraDialog(true)}
-            variant="outline"
-            size="sm"
-            className="flex-1 max-w-[110px] h-12 rounded-full bg-purple-100 border-purple-300 hover:bg-purple-200"
-          >
-            <Camera className="h-5 w-5 text-purple-600 mr-2" />
-            <span className="text-sm">Camera</span>
-          </Button>
-          
-          {/* Upload Image */}
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                  setCapturedImage(event.target?.result as string);
-                  setShowImagePreview(true);
-                };
-                reader.readAsDataURL(file);
-              }
-            }}
-            className="hidden"
-            id="image-upload"
-          />
-          <Button
-            onClick={() => document.getElementById('image-upload')?.click()}
-            variant="outline"
-            size="sm"
-            className="flex-1 max-w-[110px] h-12 rounded-full bg-green-100 border-green-300 hover:bg-green-200"
-          >
-            <Image className="h-5 w-5 text-green-600 mr-2" />
-            <span className="text-sm">Image</span>
-          </Button>
+            {/* Camera Button */}
+            <Button
+              onClick={() => setShowCameraDialog(true)}
+              variant="outline"
+              size="sm"
+              className="w-11 h-11 sm:w-12 sm:h-12 p-0 rounded-full bg-purple-100 border-purple-300 hover:bg-purple-200"
+              title="Take photo"
+            >
+              <Camera className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
+            </Button>
+            
+            {/* Upload Image */}
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  const reader = new FileReader();
+                  reader.onload = (event) => {
+                    setCapturedImage(event.target?.result as string);
+                    setShowImagePreview(true);
+                  };
+                  reader.readAsDataURL(file);
+                }
+              }}
+              className="hidden"
+              id="image-upload"
+            />
+            <Button
+              onClick={() => document.getElementById('image-upload')?.click()}
+              variant="outline"
+              size="sm"
+              className="w-11 h-11 sm:w-12 sm:h-12 p-0 rounded-full bg-green-100 border-green-300 hover:bg-green-200"
+              title="Upload image"
+            >
+              <Image className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
+            </Button>
 
-          {/* Upload PDF */}
-          <input
-            type="file"
-            accept="application/pdf"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) {
-                const userMessage = {
-                  text: `📄 Uploaded report: ${file.name}`,
-                  isUser: true,
-                  timestamp: new Date()
-                };
-                setMessages(prev => [...prev, userMessage]);
-                
-                const aiMessage = {
-                  text: "I received your PDF report! While I can see the filename, I recommend describing the key findings from your report so I can provide personalized wellness advice. 📋",
-                  isUser: false,
-                  timestamp: new Date()
-                };
-                setMessages(prev => [...prev, aiMessage]);
-              }
-            }}
-            className="hidden"
-            id="pdf-upload"
-          />
-          <Button
-            onClick={() => document.getElementById('pdf-upload')?.click()}
-            variant="outline"
-            size="sm"
-            className="flex-1 max-w-[110px] h-12 rounded-full bg-blue-100 border-blue-300 hover:bg-blue-200"
-          >
-            <FileText className="h-5 w-5 text-blue-600 mr-2" />
-            <span className="text-sm">PDF</span>
-          </Button>
+            {/* Upload PDF */}
+            <input
+              type="file"
+              accept="application/pdf"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  const userMessage = {
+                    text: `📄 Uploaded report: ${file.name}`,
+                    isUser: true,
+                    timestamp: new Date()
+                  };
+                  setMessages(prev => [...prev, userMessage]);
+                  
+                  const aiMessage = {
+                    text: "I received your PDF report! While I can see the filename, I recommend describing the key findings from your report so I can provide personalized wellness advice. 📋",
+                    isUser: false,
+                    timestamp: new Date()
+                  };
+                  setMessages(prev => [...prev, aiMessage]);
+                }
+              }}
+              className="hidden"
+              id="pdf-upload"
+            />
+            <Button
+              onClick={() => document.getElementById('pdf-upload')?.click()}
+              variant="outline"
+              size="sm"
+              className="w-11 h-11 sm:w-12 sm:h-12 p-0 rounded-full bg-blue-100 border-blue-300 hover:bg-blue-200"
+              title="Upload PDF"
+            >
+              <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+            </Button>
+          </div>
         </div>
       </div>
+
+      {/* Spacer for fixed input area + bottom navigation */}
+      <div className="h-52 sm:h-56"></div>
 
       {/* Camera Dialog with Front/Back Switch */}
       <AnimatePresence>

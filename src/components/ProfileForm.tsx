@@ -71,20 +71,25 @@ const ProfileForm = ({ user, onComplete }: ProfileFormProps) => {
 
       const { error } = await supabase
         .from('user_profiles')
-        .update({
-          full_name: formData.full_name,
-          phone: formData.phone,
-          date_of_birth: formData.date_of_birth,
-          gender: formData.gender,
-          address: formData.address,
-          height: parseFloat(formData.height),
-          height_unit: formData.height_unit,
-          weight: parseFloat(formData.weight),
-          weight_unit: formData.weight_unit,
-          parental_code: needsParentalControl ? generatedCode : null,
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id);
+        .upsert(
+          [
+            {
+              user_id: user.id,
+              full_name: formData.full_name,
+              phone: formData.phone,
+              date_of_birth: formData.date_of_birth,
+              gender: formData.gender,
+              address: formData.address,
+              height: parseFloat(formData.height),
+              height_unit: formData.height_unit,
+              weight: parseFloat(formData.weight),
+              weight_unit: formData.weight_unit,
+              parental_code: needsParentalControl ? generatedCode : null,
+              updated_at: new Date().toISOString()
+            }
+          ],
+          { onConflict: 'user_id' }
+        );
 
       if (error) throw error;
 

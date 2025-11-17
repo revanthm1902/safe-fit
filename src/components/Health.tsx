@@ -98,20 +98,21 @@ const Health = () => {
               <Button
                 onClick={() => setSelectedMetric(metric.id)}
                 variant="outline"
-                className={`w-full p-4 h-auto flex flex-col items-center border-white/20 transition-all ${
-                  isSelected
-                    ? 'bg-white/20 border-teal-400 text-white'
-                    : 'bg-white/10 text-gray-300 hover:bg-white/15'
-                }`}
+                className={`w-full p-4 h-auto flex flex-col items-center border-white/20 transition-all
+                  ${isSelected
+                    ? 'bg-gradient-to-br from-teal-500 to-purple-600 text-white border-teal-400 shadow-lg'
+                    : 'bg-white/10 text-gray-300 hover:bg-white/15'}
+                `}
+                style={isSelected ? { color: '#fff' } : {}}
               >
                 <Icon
                   className="w-6 h-6 mb-2"
-                  style={{ color: isSelected ? metric.color : undefined }}
+                  style={{ color: isSelected ? '#fff' : metric.color }}
                 />
-                <span className="text-xs font-medium text-gray-50">{metric.label}</span>
-                <span className="text-lg font-bold text-white mt-1">
+                <span className="text-xs font-medium" style={isSelected ? { color: '#fff' } : { color: '#d1d5db' }}>{metric.label}</span>
+                <span className="text-lg font-bold mt-1" style={isSelected ? { color: '#fff' } : { color: '#fff' }}>
                   {metric.currentValue?.toFixed(metric.id === 'temp' ? 1 : 0) || '--'}
-                  <span className="text-xs ml-1">{metric.unit}</span>
+                  <span className="text-xs ml-1" style={isSelected ? { color: '#fff' } : { color: '#d1d5db' }}>{metric.unit}</span>
                 </span>
               </Button>
             </motion.div>

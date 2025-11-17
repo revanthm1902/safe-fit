@@ -8,6 +8,7 @@ interface HealthMetrics {
   stress: number;
   steps: number;
   timestamp: string;
+  fromDb: boolean; // true if data originates from sensor_data table
 }
 
 interface HistoricalData {
@@ -47,6 +48,7 @@ export const useHealthMetrics = () => {
             stress: 0,
             steps: 0,
             timestamp: new Date().toISOString(),
+            fromDb: false,
           });
           setLoading(false);
           return;
@@ -69,6 +71,7 @@ export const useHealthMetrics = () => {
             stress: 0,
             steps: 0,
             timestamp: new Date().toISOString(),
+            fromDb: false,
           });
           setError(null); // Clear any errors
           setLoading(false);
@@ -83,6 +86,7 @@ export const useHealthMetrics = () => {
             stress: calculateStress(data.bpm), // Calculate from heart rate
             steps: data.steps || 0,
             timestamp: data.timestamp,
+            fromDb: true,
           });
         }
       } catch (err) {
@@ -94,6 +98,7 @@ export const useHealthMetrics = () => {
           stress: 0,
           steps: 0,
           timestamp: new Date().toISOString(),
+          fromDb: false,
         });
         setError(null);
         console.warn('Could not fetch sensor data:', err);
@@ -124,6 +129,7 @@ export const useHealthMetrics = () => {
               stress: calculateStress(data.bpm),
               steps: data.steps || 0,
               timestamp: data.timestamp,
+              fromDb: true,
             });
           }
         }

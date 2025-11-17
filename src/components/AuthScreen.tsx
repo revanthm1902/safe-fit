@@ -34,13 +34,15 @@ const AuthScreen = ({
         });
         if (error) throw error;
 
-        // Check if user has completed profile
-        const {
-          data: profile
-        } = await supabase.from('user_profiles').select('*').eq('user_id', data.user.id).single();
+        // Check if user has completed profile (tolerant of missing row)
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('full_name, phone')
+          .eq('user_id', data.user.id)
+          .maybeSingle();
         onAuthSuccess({
           user: data.user,
-          hasProfile: profile && profile.full_name && profile.phone
+          hasProfile: Boolean(profile?.full_name && profile?.phone)
         });
       } else {
         const {

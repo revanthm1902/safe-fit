@@ -32,8 +32,19 @@ const SecurityPasskey = ({ user, onPasskeyVerified }: SecurityPasskeyProps) => {
   useEffect(() => {
     // Check if user has a passkey stored
     const storedPasskey = localStorage.getItem(`passkey_${user?.id}`);
-    setIsNewUser(!storedPasskey);
-  }, [user]);
+    const hasPasskey = !!storedPasskey;
+    setIsNewUser(!hasPasskey);
+    
+    // If user already has a passkey, just verify them automatically on first login of session
+    if (hasPasskey) {
+      const sessionVerified = sessionStorage.getItem(`passkey_verified_${user?.id}`);
+      if (sessionVerified === 'true') {
+        // Already verified this session, skip the dialog
+        setIsDialogOpen(false);
+        onPasskeyVerified();
+      }
+    }
+  }, [user, onPasskeyVerified]);
 
   const handleSetPasskey = () => {
     if (!passkey || passkey.length < 6) {
@@ -69,6 +80,9 @@ const SecurityPasskey = ({ user, onPasskeyVerified }: SecurityPasskeyProps) => {
     const storedPasskey = localStorage.getItem(`passkey_${user?.id}`);
     
     if (passkey === storedPasskey) {
+      // Store session verification so user doesn't need to verify again this session
+      sessionStorage.setItem(`passkey_verified_${user?.id}`, 'true');
+      
       toast({
         title: "Access Granted",
         description: "Welcome back to SafeFit"

@@ -52,6 +52,54 @@ const LiveLocationMap: React.FC<LiveLocationMapProps> = ({ userLocation }) => {
     };
   }, []);
 
+  // Google Maps integration
+  const mapRef = useRef<HTMLDivElement | null>(null);
+  const googleMapRef = useRef<any>(null);
+  const markerRef = useRef<any>(null);
+
+  // Load Google Maps script
+  useEffect(() => {
+    if (!userLocation) return;
+    if (window.google && window.google.maps && mapRef.current) {
+      if (!googleMapRef.current) {
+        googleMapRef.current = new window.google.maps.Map(mapRef.current, {
+          center: userLocation,
+          zoom: 16,
+          mapTypeId: mapView === 'satellite' ? 'satellite' : 'roadmap',
+          disableDefaultUI: true,
+        });
+        markerRef.current = new window.google.maps.Marker({
+          position: userLocation,
+          map: googleMapRef.current,
+          animation: window.google.maps.Animation.DROP,
+        });
+      } else {
+        googleMapRef.current.setCenter(userLocation);
+        googleMapRef.current.setMapTypeId(mapView === 'satellite' ? 'satellite' : 'roadmap');
+        markerRef.current.setPosition(userLocation);
+      }
+    }
+  }, [userLocation, mapView]);
+
+  // Dynamically load Google Maps script if not present
+  useEffect(() => {
+    if (window.google && window.google.maps) return;
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`;
+    script.async = true;
+    script.onload = () => {
+      // force rerender
+      if (userLocation && mapRef.current) {
+        googleMapRef.current = null;
+      }
+    };
+    document.body.appendChild(script);
+    return () => {
+      document.body.removeChild(script);
+    };
+    // eslint-disable-next-line
+  }, []);
+
   return (
     <div className="space-y-4">
       {/* Map Controls */}
@@ -91,46 +139,26 @@ const LiveLocationMap: React.FC<LiveLocationMapProps> = ({ userLocation }) => {
         )}
       </div>
 
-      {/* Map Display */}
+      {/* Map Display (Google Maps) */}
       <Card className="relative overflow-hidden">
-        <div 
-          className={`h-48 sm:h-64 flex items-center justify-center relative ${
-            mapView === 'satellite' 
-              ? 'bg-gradient-to-br from-green-800 via-green-600 to-blue-600' 
-              : 'bg-gradient-to-br from-gray-100 via-gray-200 to-gray-300'
-          }`}
-        >
-          {/* Map Pattern Overlay */}
-          <div className="absolute inset-0 opacity-20">
-            <div className="grid grid-cols-8 grid-rows-8 h-full w-full">
-              {Array.from({ length: 64 }).map((_, i) => (
-                <div 
-                  key={i} 
-                  className={`border ${
-                    mapView === 'satellite' 
-                      ? 'border-white/20' 
-                      : 'border-gray-400/30'
-                  }`} 
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Current Location Marker */}
-          {userLocation && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="relative">
-                <div className={`w-6 h-6 rounded-full border-4 border-white shadow-lg ${
-                  isTracking ? 'bg-red-500 animate-pulse' : 'bg-blue-500'
-                }`} />
-                <div className={`absolute inset-0 rounded-full border-2 ${
-                  isTracking ? 'border-red-300 animate-ping' : 'border-blue-300'
-                }`} />
-              </div>
+        <div className="h-48 sm:h-64 w-full relative">
+          {userLocation ? (
+            <div ref={mapRef} className="absolute inset-0 w-full h-full rounded-lg" />
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full">
+              <MapPin className="h-8 w-8 sm:h-12 sm:w-12 text-gray-400 mb-2" />
+              <p className="text-gray-600 text-sm sm:text-base">Enable location access to view map</p>
+              <Button 
+                onClick={() => window.location.reload()} 
+                variant="outline" 
+                size="sm" 
+                className="mt-2 text-xs sm:text-sm"
+              >
+                Refresh Location
+              </Button>
             </div>
           )}
-
-          {/* Location Info Overlay */}
+          {/* Overlay: Info and Tracking Status */}
           <div className="absolute top-2 sm:top-4 left-2 sm:left-4 bg-white/90 backdrop-blur-sm rounded-lg p-2 sm:p-3 shadow-md max-w-[calc(100%-1rem)] sm:max-w-none">
             <div className="flex items-center space-x-2">
               <Crosshair className="h-3 w-3 sm:h-4 sm:w-4 text-safefit-highlight flex-shrink-0" />
@@ -148,8 +176,6 @@ const LiveLocationMap: React.FC<LiveLocationMapProps> = ({ userLocation }) => {
               </div>
             )}
           </div>
-
-          {/* Tracking Status */}
           {isTracking && (
             <div className="absolute bottom-2 sm:bottom-4 right-2 sm:right-4 bg-red-500 text-white px-2 sm:px-3 py-1 rounded-full text-xs font-medium flex items-center animate-pulse">
               <div className="w-2 h-2 bg-white rounded-full mr-2 animate-ping" />
@@ -157,23 +183,23 @@ const LiveLocationMap: React.FC<LiveLocationMapProps> = ({ userLocation }) => {
               <span className="sm:hidden">Live</span>
             </div>
           )}
-
-          {/* No Location Message */}
-          {!userLocation && (
-            <div className="text-center p-4">
-              <MapPin className="h-8 w-8 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-2" />
-              <p className="text-gray-600 text-sm sm:text-base">Enable location access to view map</p>
-              <Button 
-                onClick={() => window.location.reload()} 
-                variant="outline" 
-                size="sm" 
-                className="mt-2 text-xs sm:text-sm"
-              >
-                Refresh Location
-              </Button>
-            </div>
-          )}
         </div>
+        {/* Open in Google Maps Button */}
+        {userLocation && (
+          <div className="absolute bottom-2 left-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs bg-white/80 hover:bg-white"
+              onClick={() => {
+                const url = `https://www.google.com/maps/search/?api=1&query=${userLocation.lat},${userLocation.lng}`;
+                window.open(url, '_blank', 'noopener,noreferrer');
+              }}
+            >
+              Open in Google Maps
+            </Button>
+          </div>
+        )}
       </Card>
 
       {/* Location Sharing Status */}

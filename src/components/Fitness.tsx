@@ -87,7 +87,7 @@ const Fitness = () => {
     title: "Hydration",
     value: "0/8",
     goal: "8 glasses",
-    progress: 75,
+    progress: 0,
     color: "from-blue-500 to-cyan-500"
   }];
 

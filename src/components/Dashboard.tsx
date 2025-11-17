@@ -97,12 +97,15 @@ const Dashboard = ({ user }: DashboardProps) => {
   // Extract first name only
   const firstName = fullName.split(' ')[0];
 
-  // Check if IoT system is connected (has recent sensor data)
-  const isIoTConnected = !loading && currentMetrics && (
-    currentMetrics.heartRate > 0 || 
-    currentMetrics.spo2 > 0 || 
-    currentMetrics.steps > 0
-  );
+  // Determine connection: must have real DB data and a row newer than 60 seconds
+  const isIoTConnected = (() => {
+    if (loading || !currentMetrics) return false;
+    if (!currentMetrics.fromDb) return false; // fallback zeros, treat as disconnected
+    const ageMs = Date.now() - new Date(currentMetrics.timestamp).getTime();
+    if (ageMs > 60_000) return false; // older than 1 minute
+    // Require at least one positive metric to confirm active feed
+    return (currentMetrics.heartRate > 0 || currentMetrics.spo2 > 0 || currentMetrics.steps > 0);
+  })();
 
   // Use real data from Supabase instead of fake data
   const vitalsData = [

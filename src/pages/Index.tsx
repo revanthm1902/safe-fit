@@ -115,7 +115,7 @@ const Index = () => {
 
   const handleAuthSuccess = async (userData: { user: User; hasProfile: boolean }) => {
     setUser(userData.user);
-    
+
     if (userData.hasProfile) {
       // Check onboarding and subscription status
       const hasSeenOnboarding = localStorage.getItem(`onboarding_${userData.user.id}`);
@@ -131,7 +131,33 @@ const Index = () => {
         }
       }
     } else {
-      setCurrentScreen('profile');
+      // Double-check server in case this is a new device without cached profile
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', userData.user.id)
+        .maybeSingle();
+
+      const hasServerProfile = Boolean(profile?.full_name && profile?.phone);
+
+      if (hasServerProfile) {
+        // Cache profile for this device
+        localStorage.setItem(`profile_${userData.user.id}`, JSON.stringify(profile));
+
+        const hasSeenOnboarding = localStorage.getItem(`onboarding_${userData.user.id}`);
+        if (!hasSeenOnboarding) {
+          setCurrentScreen('onboarding');
+        } else {
+          const userSubscription = localStorage.getItem(`subscription_${userData.user.id}`);
+          if (!userSubscription) {
+            setCurrentScreen('subscription');
+          } else {
+            setCurrentScreen('main');
+          }
+        }
+      } else {
+        setCurrentScreen('profile');
+      }
     }
   };
 

@@ -4,7 +4,7 @@
 
 ### 1. Environment Configuration
 **File:** `.env`
-- ✅ `VITE_SUPABASE_URL` = https://ntwqxgzcmwvvrptctetx.supabase.co
+- ✅ `VITE_SUPABASE_URL` = ""
 - ✅ `VITE_SUPABASE_ANON_KEY` = Configured
 
 ### 2. Supabase Client

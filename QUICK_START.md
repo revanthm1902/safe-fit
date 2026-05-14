@@ -5,8 +5,8 @@
 Located in: `.env`
 
 ```env
-VITE_SUPABASE_URL=https://ntwqxgzcmwvvrptctetx.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+VITE_SUPABASE_URL=""
+VITE_SUPABASE_ANON_KEY=""
 ```
 
 ---

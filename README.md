@@ -1,5 +1,5 @@
 
-# SafeFit — Smart Bracelet (SafeFit)
+# SafeFit — Smart Bracelet
 
 SafeFit is a compact, screenless smart bracelet focused on continuous health monitoring and autonomous personal safety. It is designed to function offline using embedded GSM/GPS modules and to synchronize with a companion mobile app when connectivity is available.
 

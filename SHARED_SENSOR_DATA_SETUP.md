@@ -120,7 +120,6 @@ To preserve existing data:
 -- Backup existing data first
 CREATE TABLE sensor_data_backup AS SELECT * FROM sensor_data;
 
--- Then run the schema above
 
 -- Restore data without user_id
 INSERT INTO sensor_data (bpm, spo2, steps, latitude, longitude, timestamp)
@@ -128,4 +127,3 @@ SELECT bpm, spo2, steps, latitude, longitude, timestamp
 FROM sensor_data_backup;
 ```
 
-Run this SQL and your app will show shared sensor data to all users! 🚀

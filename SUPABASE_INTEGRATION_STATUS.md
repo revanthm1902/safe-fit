@@ -124,23 +124,6 @@ create index idx_sensor_data_timestamp
 
 ---
 
-## 🧪 Test Connection
-
-To verify everything works:
-
-1. **Insert test data in Supabase SQL Editor:**
-```sql
-INSERT INTO sensor_data (bpm, spo2, steps, latitude, longitude)
-VALUES (75, 98.5, 5000, 12.9716, 77.5946);
-```
-
-2. **Check the app:**
-   - Health page should show: Heart Rate 75 BPM, SpO2 98.5%
-   - Dashboard should show: 5000 steps
-   - Data should update within 1-2 seconds
-
----
 
 ## ✅ All Systems Ready!
 
-Your app is fully connected to Supabase and will automatically sync sensor data in real-time.

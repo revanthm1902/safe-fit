@@ -2,7 +2,6 @@
 
 ## Complete SQL Schema for User Authentication
 
-Run this SQL in your **Supabase SQL Editor** to set up all necessary tables for user authentication and profile management.
 
 ---
 
@@ -343,4 +342,3 @@ FROM pg_policies
 WHERE schemaname = 'public';
 ```
 
-Run this entire script in your Supabase SQL Editor to set up everything! 🚀

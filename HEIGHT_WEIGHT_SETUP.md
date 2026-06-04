@@ -277,21 +277,6 @@ const weightInKg = formData.weight_unit === 'lbs'
 - Ensure `parseFloat()` is used when saving to database
 - Validate input is numeric before submission
 
-## Next Steps
-
-1. ✅ Run the migration in Supabase
-2. ✅ Test profile creation with height/weight
-3. ✅ Verify data in Supabase dashboard
-4. ✅ Check local storage in browser DevTools
-5. Consider adding BMI calculation using height/weight
-6. Add data validation (min/max values)
-7. Implement unit conversion if needed
-
-## Related Files
-
-- `src/components/ProfileForm.tsx` - Form component with height/weight fields
-- `supabase/migrations/add_height_weight_to_profiles.sql` - Database migration
-- `src/integrations/supabase/client.ts` - Supabase client configuration
 
 ---
 
